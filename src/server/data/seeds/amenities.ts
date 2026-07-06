@@ -1,0 +1,58 @@
+import type { Amenity } from "@/types/stadium";
+
+export const AMENITY_SEED: Amenity[] = [
+  {
+    id: "toilet-c-north",
+    type: "accessible_toilet",
+    name: "Accessible Restroom — North Concourse",
+    nearSection: "112",
+    gate: "C",
+    accessible: true,
+    dietaryTags: [],
+  },
+  {
+    id: "food-halal-205",
+    type: "food",
+    name: "Halal Grill — Section 205",
+    nearSection: "205",
+    gate: "A",
+    accessible: true,
+    dietaryTags: ["halal", "vegetarian"],
+  },
+  {
+    id: "water-c",
+    type: "water_refill",
+    name: "Water Refill — Gate C",
+    nearSection: "112",
+    gate: "C",
+    accessible: true,
+    dietaryTags: [],
+  },
+  {
+    id: "first-aid-b",
+    type: "first_aid",
+    name: "First Aid — Gate B",
+    nearSection: "205",
+    gate: "B",
+    accessible: true,
+    dietaryTags: [],
+  },
+  {
+    id: "sensory-d",
+    type: "sensory_room",
+    name: "Sensory Room — Gate D",
+    nearSection: "318",
+    gate: "D",
+    accessible: true,
+    dietaryTags: [],
+  },
+  {
+    id: "recycle-a",
+    type: "recycling",
+    name: "Recycling Hub — Gate A",
+    nearSection: "205",
+    gate: "A",
+    accessible: true,
+    dietaryTags: [],
+  },
+];
