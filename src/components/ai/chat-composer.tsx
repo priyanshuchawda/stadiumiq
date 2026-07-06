@@ -42,7 +42,7 @@ export function ChatComposer({
         <button
           type="submit"
           disabled={loading}
-          className="inline-flex min-h-11 items-center rounded-md bg-emerald-600 px-5 text-sm font-semibold text-white disabled:opacity-50"
+          className="inline-flex min-h-11 items-center rounded-md bg-emerald-700 px-5 text-sm font-semibold text-white disabled:opacity-50"
         >
           {loading ? "Kai is thinking…" : "Send"}
         </button>

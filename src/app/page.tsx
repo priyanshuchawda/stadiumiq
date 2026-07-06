@@ -19,7 +19,7 @@ export default function HomePage(): React.JSX.Element {
         <div className="flex flex-wrap gap-3 pt-2">
           <Link
             href="/assistant"
-            className="inline-flex min-h-11 items-center rounded-md bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
+            className="inline-flex min-h-11 items-center rounded-md bg-emerald-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
           >
             Open Kai Assistant
           </Link>

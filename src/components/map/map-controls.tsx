@@ -35,7 +35,7 @@ export function MapControls(props: MapControlsProps): React.JSX.Element {
       />
       <button
         type="button"
-        className="min-h-11 rounded-md bg-emerald-600 px-4 font-medium text-white hover:bg-emerald-700"
+        className="min-h-11 rounded-md bg-emerald-700 px-4 font-medium text-white hover:bg-emerald-800"
         disabled={props.loadingRoute}
         onClick={props.onPlanRoute}
       >

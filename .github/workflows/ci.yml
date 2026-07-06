@@ -20,4 +20,7 @@ jobs:
       - run: npm run lint
       - run: npm run test
       - run: npm run build
+      - run: npx playwright install chromium --with-deps
+      - run: npm run test:e2e
+      - run: npm run test:a11y
       - run: npm audit --audit-level=high
