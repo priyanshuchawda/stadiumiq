@@ -1,8 +1,8 @@
 import type { MobilityLevel, Persona, TicketType } from "@/types/domain";
 
 export type UserLocation = {
-  gate?: string;
-  section?: string;
+  gate?: string | undefined;
+  section?: string | undefined;
 };
 
 export type UserAccessibility = {
@@ -20,10 +20,10 @@ export type UserContext = {
   persona: Persona;
   language: string;
   accessibility: UserAccessibility;
-  location?: UserLocation;
-  ticketType?: TicketType;
-  minutesToKickoff?: number;
-  weather?: UserWeather;
+  location?: UserLocation | undefined;
+  ticketType?: TicketType | undefined;
+  minutesToKickoff?: number | undefined;
+  weather?: UserWeather | undefined;
 };
 
 export type RouteStep = {
