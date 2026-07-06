@@ -2,6 +2,7 @@ import "server-only";
 import { getGeminiClient } from "@/lib/ai/client";
 import { ModelTier, getMaxOutputTokens, resolveModelId } from "@/lib/ai/models";
 import { buildRepairPrompt, parseStructuredOutput } from "@/lib/ai/structured-output";
+import { KAI_SAFETY_SETTINGS } from "@/lib/ai/safety";
 import { withRetry } from "@/lib/ai/with-retry";
 import { DashboardAiOutputSchema } from "@/lib/validation/schemas/dashboard";
 import type { DashboardAiInsights } from "@/types/dashboard";
@@ -69,6 +70,7 @@ async function requestStructuredSummary(
         responseMimeType: "application/json",
         maxOutputTokens: Math.min(768, getMaxOutputTokens()),
         temperature: 0.4,
+        safetySettings: KAI_SAFETY_SETTINGS,
       },
     }),
   );

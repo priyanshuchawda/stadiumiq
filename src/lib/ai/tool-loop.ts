@@ -2,6 +2,7 @@ import type { Content, FunctionCall } from "@google/genai";
 import type { GoogleGenAI } from "@google/genai";
 import { getMaxOutputTokens } from "@/lib/ai/models";
 import { buildSystemPrompt, wrapUserMessage } from "@/lib/ai/prompts";
+import { KAI_SAFETY_SETTINGS } from "@/lib/ai/safety";
 import { STADIUM_TOOL_DECLARATIONS } from "@/lib/ai/tool-declarations";
 import { executeToolCall } from "@/lib/ai/tool-executors";
 import { withRetry } from "@/lib/ai/with-retry";
@@ -35,6 +36,7 @@ export async function runToolLoop(
         config: {
           systemInstruction: buildSystemPrompt(input.context),
           maxOutputTokens: getMaxOutputTokens(),
+          safetySettings: KAI_SAFETY_SETTINGS,
           tools: [{ functionDeclarations: STADIUM_TOOL_DECLARATIONS }],
         },
       }),

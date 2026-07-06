@@ -4,6 +4,7 @@ import { LruCache } from "@/lib/ai/lru-cache";
 import { ModelTier, getMaxOutputTokens, resolveModelId } from "@/lib/ai/models";
 import { parseGroundingMetadata } from "@/lib/ai/parse-grounding";
 import { buildGroundedSystemPrompt, wrapUserMessage } from "@/lib/ai/prompts";
+import { KAI_SAFETY_SETTINGS } from "@/lib/ai/safety";
 import { withRetry } from "@/lib/ai/with-retry";
 import {
   getGreenestOption,
@@ -62,6 +63,7 @@ async function callGroundedModel(
           tools: [{ googleSearch: {} }],
           temperature: 1,
           maxOutputTokens: getMaxOutputTokens(),
+          safetySettings: KAI_SAFETY_SETTINGS,
         },
       }),
     );

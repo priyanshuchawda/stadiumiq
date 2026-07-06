@@ -3,6 +3,7 @@ import "server-only";
 import { getGeminiClient } from "@/lib/ai/client";
 import { buildSystemPrompt, wrapUserMessage } from "@/lib/ai/prompts";
 import { getMaxOutputTokens, ModelTier, resolveModelId } from "@/lib/ai/models";
+import { KAI_SAFETY_SETTINGS } from "@/lib/ai/safety";
 import { withRetry } from "@/lib/ai/with-retry";
 import type { UserContext } from "@/types/stadium";
 
@@ -42,6 +43,7 @@ export async function analyzeVisionImage(
       config: {
         systemInstruction: buildSystemPrompt(request.context),
         maxOutputTokens: getMaxOutputTokens(),
+        safetySettings: KAI_SAFETY_SETTINGS,
       },
     }),
   );

@@ -1,4 +1,5 @@
 import { getGeminiClient } from "@/lib/ai/client";
+import { buildKaiFallbackAnswer } from "@/lib/ai/fallback";
 import { LruCache } from "@/lib/ai/lru-cache";
 import { ModelTier, resolveModelId } from "@/lib/ai/models";
 import { runToolLoop } from "@/lib/ai/tool-loop";
@@ -51,17 +52,8 @@ export async function askKai(request: KaiRequest): Promise<KaiResponse> {
 }
 
 function buildFallbackResponse(context: UserContext): KaiResponse {
-  if (context.accessibility.mobility === "wheelchair") {
-    return {
-      answer:
-        "Use Gate C for step-free entry. Head to the North Concourse accessible ramp toward Section 112. Nearest accessible restroom is on the North Concourse.",
-      usedTools: [],
-      fallback: true,
-    };
-  }
   return {
-    answer:
-      "Gate C currently has the shortest wait. Follow concourse signage to your section and allow extra time near Gate B.",
+    answer: buildKaiFallbackAnswer(context),
     usedTools: [],
     fallback: true,
   };

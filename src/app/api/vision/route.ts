@@ -1,4 +1,6 @@
 import { checkRateLimit } from "@/server/security/rate-limit";
+import { getClientKey } from "@/server/http/client-key";
+import { mapErrorToResponse } from "@/server/http/error-response";
 import {
   ALLOWED_IMAGE_MIMES,
   MAX_IMAGE_BYTES,
@@ -12,7 +14,15 @@ function isAllowedMime(mime: string): mime is (typeof ALLOWED_IMAGE_MIMES)[numbe
 }
 
 export async function POST(request: Request): Promise<Response> {
-  const clientKey = request.headers.get("x-forwarded-for") ?? "local";
+  try {
+    return await handleVisionRequest(request);
+  } catch (error) {
+    return mapErrorToResponse(error, { route: "POST /api/vision" });
+  }
+}
+
+async function handleVisionRequest(request: Request): Promise<Response> {
+  const clientKey = getClientKey(request);
   const rate = checkRateLimit(clientKey);
   if (!rate.allowed) {
     return Response.json(

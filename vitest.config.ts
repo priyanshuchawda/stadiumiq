@@ -9,7 +9,11 @@ export default defineConfig({
         test: {
           name: "unit",
           environment: "node",
-          include: ["src/**/*.test.ts", "tests/unit/**/*.test.ts"],
+          include: [
+            "src/**/*.test.ts",
+            "tests/unit/**/*.test.ts",
+            "tests/integration/**/*.test.ts",
+          ],
           exclude: ["tests/e2e/**", "tests/live/**"],
         },
       },
@@ -37,10 +41,10 @@ export default defineConfig({
       provider: "v8",
       include: ["src/server/services/**", "src/lib/ai/**"],
       thresholds: {
-        lines: 80,
+        lines: 90,
         branches: 80,
-        functions: 80,
-        statements: 80,
+        functions: 90,
+        statements: 90,
       },
     },
   },

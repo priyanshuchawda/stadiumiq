@@ -1,7 +1,16 @@
 import { buildRouteOverlay } from "@/server/services/map-service";
+import { mapErrorToResponse } from "@/server/http/error-response";
 import { MapRouteRequestSchema } from "@/lib/validation/schemas/map";
 
 export async function POST(request: Request): Promise<Response> {
+  try {
+    return await handleRouteRequest(request);
+  } catch (error) {
+    return mapErrorToResponse(error, { route: "POST /api/map/route" });
+  }
+}
+
+async function handleRouteRequest(request: Request): Promise<Response> {
   let body: unknown;
   try {
     body = await request.json();

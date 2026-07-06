@@ -21,6 +21,14 @@ const eslintConfig = defineConfig([
       "import/no-cycle": "error",
     },
   },
+  {
+    // Test files legitimately contain long describe/it suites and fixtures.
+    files: ["tests/**", "**/*.test.ts", "**/*.test.tsx"],
+    rules: {
+      "max-lines-per-function": "off",
+      "max-lines": "off",
+    },
+  },
   globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts", "coverage/**"]),
 ]);
 

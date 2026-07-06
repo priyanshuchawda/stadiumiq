@@ -1,9 +1,11 @@
 import type { Content } from "@google/genai";
 import { getGeminiClient } from "@/lib/ai/client";
+import { buildKaiFallbackAnswer } from "@/lib/ai/fallback";
 import type { StreamEvent } from "@/lib/ai/sse";
 import { ModelTier, resolveModelId } from "@/lib/ai/models";
 import { buildSystemPrompt, wrapUserMessage } from "@/lib/ai/prompts";
 import { getMaxOutputTokens } from "@/lib/ai/models";
+import { KAI_SAFETY_SETTINGS } from "@/lib/ai/safety";
 import { STADIUM_TOOL_DECLARATIONS } from "@/lib/ai/tool-declarations";
 import { executeToolCall } from "@/lib/ai/tool-executors";
 import { withRetry } from "@/lib/ai/with-retry";
@@ -30,6 +32,7 @@ async function resolveToolTurns(
         config: {
           systemInstruction: buildSystemPrompt(context),
           maxOutputTokens: getMaxOutputTokens(),
+          safetySettings: KAI_SAFETY_SETTINGS,
           tools: [{ functionDeclarations: STADIUM_TOOL_DECLARATIONS }],
         },
       }),
@@ -77,6 +80,7 @@ async function* streamTokensFromGemini(
       config: {
         systemInstruction: buildSystemPrompt(context),
         maxOutputTokens: getMaxOutputTokens(),
+        safetySettings: KAI_SAFETY_SETTINGS,
       },
     }),
   );
@@ -97,10 +101,7 @@ function* streamFallbackText(text: string): Generator<string> {
 }
 
 function buildFallbackText(context: UserContext): string {
-  if (context.accessibility.mobility === "wheelchair") {
-    return "Use Gate C for step-free entry. Head to the North Concourse accessible ramp toward Section 112.";
-  }
-  return "Gate C currently has the lowest wait. Follow concourse signage to your section.";
+  return buildKaiFallbackAnswer(context);
 }
 
 export async function* streamKai(request: KaiRequest): AsyncGenerator<StreamEvent> {
