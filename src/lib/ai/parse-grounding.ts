@@ -1,5 +1,6 @@
 import "server-only";
 import type { GroundingMetadata } from "@google/genai";
+import { stripUnsafeUnicode } from "@/lib/ai/sanitize";
 import { sanitizeGroundingHtml } from "@/lib/utils/sanitize-grounding-html";
 import { sanitizeHttpsUrl } from "@/lib/utils/is-https-url";
 import type { GroundingSource } from "@/types/grounding";
@@ -21,7 +22,7 @@ function extractWebSources(
       continue;
     }
     sources.push({
-      title: chunk.web?.title?.trim() || safeUri,
+      title: stripUnsafeUnicode(chunk.web?.title?.trim() || safeUri),
       uri: safeUri,
     });
   }

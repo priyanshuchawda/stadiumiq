@@ -10,7 +10,7 @@ export async function POST(request: Request): Promise<Response> {
   try {
     const clientKey = getClientKey(request);
     const body = await readJsonWithLimit(request);
-    const result = handleChatRequest(body, clientKey);
+    const result = handleChatRequest(body, clientKey, request.signal);
     if (!result.ok) {
       const headers: Record<string, string> = {};
       if (result.retryAfter) {

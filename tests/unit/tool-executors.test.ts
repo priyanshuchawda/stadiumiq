@@ -66,7 +66,36 @@ describe("executeToolCall", () => {
     expect(result).toEqual({ error: "Unknown tool: unknownTool" });
   });
 
-  it("throws on invalid tool arguments", async () => {
-    await expect(executeToolCall("getCrowdStatus", {}, context)).rejects.toThrow();
+  it("returns a model-readable error for invalid tool arguments", async () => {
+    const result = await executeToolCall("getCrowdStatus", {}, context);
+    expect(result).toMatchObject({
+      error: expect.stringContaining("Invalid arguments for getCrowdStatus"),
+    });
+  });
+
+  it("rejects unknown/privileged fields via strict schemas", async () => {
+    const result = await executeToolCall(
+      "getCrowdStatus",
+      { area: "gate-c", isAdmin: true },
+      context,
+    );
+    expect(result).toMatchObject({
+      error: expect.stringContaining("Invalid arguments"),
+    });
+  });
+
+  it("returns model-readable errors for each tool's invalid args", async () => {
+    const cases: [string, unknown][] = [
+      ["getRoute", { from: "gate-c" }],
+      ["getTransportOptions", {}],
+      ["getAmenities", { type: "not-a-type" }],
+      ["getSOP", {}],
+    ];
+    for (const [name, args] of cases) {
+      const result = await executeToolCall(name, args, context);
+      expect(result).toMatchObject({
+        error: expect.stringContaining(`Invalid arguments for ${name}`),
+      });
+    }
   });
 });

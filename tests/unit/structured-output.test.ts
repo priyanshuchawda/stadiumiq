@@ -1,8 +1,26 @@
 import { describe, expect, it } from "vitest";
 import * as z from "zod";
-import { buildRepairPrompt, parseStructuredOutput } from "@/lib/ai/structured-output";
+import {
+  buildRepairPrompt,
+  parseStructuredOutput,
+  stripJsonFences,
+} from "@/lib/ai/structured-output";
 
 const schema = z.object({ name: z.string() }).strict();
+
+describe("stripJsonFences", () => {
+  it("removes ```json fences", () => {
+    expect(stripJsonFences('```json\n{"name":"Kai"}\n```')).toBe('{"name":"Kai"}');
+  });
+
+  it("removes bare ``` fences", () => {
+    expect(stripJsonFences('```\n{"a":1}\n```')).toBe('{"a":1}');
+  });
+
+  it("returns trimmed input when no fence is present", () => {
+    expect(stripJsonFences('  {"a":1}  ')).toBe('{"a":1}');
+  });
+});
 
 describe("parseStructuredOutput", () => {
   it("parses valid JSON matching the schema", () => {
@@ -11,6 +29,11 @@ describe("parseStructuredOutput", () => {
     if (result.success) {
       expect(result.data.name).toBe("Kai");
     }
+  });
+
+  it("parses fenced JSON the model wrapped in a code block", () => {
+    const result = parseStructuredOutput(schema, '```json\n{"name":"Kai"}\n```');
+    expect(result.success).toBe(true);
   });
 
   it("reports a schema mismatch as a failure with an error message", () => {

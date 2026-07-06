@@ -10,14 +10,17 @@ import { ModelTier } from "@/lib/ai/models";
 import { buildSystemPrompt, wrapUserMessage } from "@/lib/ai/prompts";
 import { getMaxOutputTokens } from "@/lib/ai/models";
 import { KAI_SAFETY_SETTINGS } from "@/lib/ai/safety";
+import { stripUnsafeUnicode } from "@/lib/ai/sanitize";
 import { STADIUM_TOOL_DECLARATIONS } from "@/lib/ai/tool-declarations";
-import { executeToolCall } from "@/lib/ai/tool-executors";
+import { createToolLoopGuard, MAX_TOOL_TURNS } from "@/lib/ai/tool-loop-guard";
+import { applyToolCalls } from "@/lib/ai/tool-turn";
 import type { KaiRequest } from "@/lib/ai/assistant-service";
 import type { UserContext } from "@/types/stadium";
 
 async function resolveToolTurns(
   contents: Content[],
   context: UserContext,
+  signal?: AbortSignal,
 ): Promise<string[]> {
   const client = getGeminiClient();
   if (!client) {
@@ -25,11 +28,14 @@ async function resolveToolTurns(
   }
 
   const usedTools: string[] = [];
+  const guard = createToolLoopGuard();
 
-  for (let turn = 0; turn < 4; turn += 1) {
+  for (let turn = 0; turn < MAX_TOOL_TURNS; turn += 1) {
+    signal?.throwIfAborted();
     const response = await generateContentWithFallback({
       client,
       tier: ModelTier.BALANCED,
+      signal,
       buildParams: () => ({
         contents,
         config: {
@@ -46,20 +52,9 @@ async function resolveToolTurns(
       break;
     }
 
-    for (const call of calls) {
-      if (!call.name) {
-        continue;
-      }
-      usedTools.push(call.name);
-      const result = await executeToolCall(call.name, call.args ?? {}, context);
-      contents.push({
-        role: "model",
-        parts: [{ functionCall: { name: call.name, args: call.args ?? {} } }],
-      });
-      contents.push({
-        role: "user",
-        parts: [{ functionResponse: { name: call.name, response: { result } } }],
-      });
+    const looped = await applyToolCalls({ contents, calls, usedTools, guard, context });
+    if (looped) {
+      break;
     }
   }
 
@@ -69,6 +64,7 @@ async function resolveToolTurns(
 async function* streamTokensFromGemini(
   contents: Content[],
   context: UserContext,
+  signal?: AbortSignal,
 ): AsyncGenerator<string> {
   const client = getGeminiClient();
   if (!client) {
@@ -78,6 +74,7 @@ async function* streamTokensFromGemini(
   const stream = await generateContentStreamWithFallback({
     client,
     tier: ModelTier.BALANCED,
+    signal,
     buildParams: () => ({
       contents,
       config: {
@@ -89,9 +86,12 @@ async function* streamTokensFromGemini(
   });
 
   for await (const chunk of stream) {
+    if (signal?.aborted) {
+      return;
+    }
     const text = chunk.text;
     if (text) {
-      yield text;
+      yield stripUnsafeUnicode(text);
     }
   }
 }
@@ -108,11 +108,12 @@ function buildFallbackText(context: UserContext): string {
 }
 
 export async function* streamKai(request: KaiRequest): AsyncGenerator<StreamEvent> {
+  const signal = request.signal;
   const contents: Content[] = [
     { role: "user", parts: [{ text: wrapUserMessage(request.message) }] },
   ];
 
-  const usedTools = await resolveToolTurns(contents, request.context);
+  const usedTools = await resolveToolTurns(contents, request.context, signal);
   if (usedTools.length > 0) {
     yield { type: "tools", names: usedTools };
   }
@@ -120,7 +121,7 @@ export async function* streamKai(request: KaiRequest): AsyncGenerator<StreamEven
   const client = getGeminiClient();
   const fallback = !client;
   const tokenStream = client
-    ? streamTokensFromGemini(contents, request.context)
+    ? streamTokensFromGemini(contents, request.context, signal)
     : streamFallbackText(buildFallbackText(request.context));
 
   let emitted = false;

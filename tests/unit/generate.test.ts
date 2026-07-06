@@ -70,6 +70,28 @@ describe("generateContentWithFallback", () => {
   });
 });
 
+describe("retryOnEmpty", () => {
+  it("retries when a response has neither text nor tool calls, then succeeds", async () => {
+    const generateContent = vi
+      .fn()
+      .mockResolvedValueOnce({ candidates: [] })
+      .mockResolvedValue({ text: "recovered", functionCalls: undefined });
+    const client = makeClient({ generateContent });
+    const registry = createModelHealthRegistry();
+
+    const response = await generateContentWithFallback({
+      client,
+      tier: ModelTier.BALANCED,
+      registry,
+      retryOnEmpty: true,
+      buildParams: () => ({ contents: "hi" }),
+    });
+
+    expect(response).toMatchObject({ text: "recovered" });
+    expect(generateContent.mock.calls.length).toBeGreaterThanOrEqual(2);
+  });
+});
+
 describe("generateContentStreamWithFallback", () => {
   it("injects the model into the stream call", async () => {
     const generateContentStream = vi.fn().mockResolvedValue("stream");

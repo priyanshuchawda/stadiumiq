@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  EmptyModelResponseError,
   extractErrorCode,
+  getRetryErrorType,
   isRetryableError,
+  parseGoogleRetryInfoMs,
   readRetryAfterMs,
   withRetry,
 } from "@/lib/ai/with-retry";
@@ -90,5 +93,40 @@ describe("withRetry", () => {
       headers: { get: (name: string) => (name === "retry-after" ? "3" : null) },
     };
     expect(readRetryAfterMs(error)).toBe(3000);
+  });
+
+  it("treats an EmptyModelResponseError as retryable", () => {
+    expect(isRetryableError(new EmptyModelResponseError())).toBe(true);
+  });
+
+  it("parses google.rpc RetryInfo retryDelay from details", () => {
+    const error = {
+      details: [
+        { "@type": "type.googleapis.com/google.rpc.RetryInfo", retryDelay: "12s" },
+      ],
+    };
+    expect(parseGoogleRetryInfoMs(error)).toBe(12000);
+  });
+
+  it("parses retryDelay embedded in an error message", () => {
+    const error = new Error('{"error":{"details":[{"retryDelay":"5s"}]}}');
+    expect(parseGoogleRetryInfoMs(error)).toBe(5000);
+  });
+
+  it("classifies retry error types without leaking messages", () => {
+    expect(getRetryErrorType({ status: 429 })).toBe("rate_limit");
+    expect(getRetryErrorType({ status: 503 })).toBe("server");
+    expect(getRetryErrorType({ status: 400 })).toBe("client");
+    expect(getRetryErrorType({ code: "ECONNRESET" })).toBe("network");
+    expect(getRetryErrorType(new EmptyModelResponseError())).toBe("empty");
+    expect(getRetryErrorType(new Error("weird"))).toBe("unknown");
+  });
+
+  it("stops retrying and throws when the signal aborts", async () => {
+    const controller = new AbortController();
+    controller.abort();
+    const op = vi.fn().mockRejectedValue({ status: 503 });
+    await expect(withRetry(op, { signal: controller.signal })).rejects.toBeTruthy();
+    expect(op).not.toHaveBeenCalled();
   });
 });

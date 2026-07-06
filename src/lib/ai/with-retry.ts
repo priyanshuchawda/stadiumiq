@@ -1,3 +1,7 @@
+import { parseGoogleRetryInfoMs } from "@/lib/ai/google-error-details";
+
+export { parseGoogleRetryInfoMs };
+
 export type RetryOptions = {
   maxRetries?: number;
   baseDelayMs?: number;
@@ -7,7 +11,20 @@ export type RetryOptions = {
   sleep?: (ms: number) => Promise<void>;
   randomFn?: () => number;
   onRetry?: (attempt: number, error: unknown, delayMs: number) => void;
+  signal?: AbortSignal | undefined;
 };
+
+/**
+ * Thrown when the model returns a structurally empty response (no text, no tool
+ * calls). Treated as a retryable/transient condition so a retry or model
+ * fallback can recover, mirroring Gemini CLI's `shouldRetryOnContent`.
+ */
+export class EmptyModelResponseError extends Error {
+  constructor(message = "Empty response from model") {
+    super(message);
+    this.name = "EmptyModelResponseError";
+  }
+}
 
 const DEFAULTS = {
   maxRetries: 2,
@@ -107,10 +124,41 @@ export function readRetryAfterMs(error: unknown): number | null {
       }
     }
   }
-  return null;
+  return parseGoogleRetryInfoMs(error);
+}
+
+export type RetryErrorType =
+  "rate_limit" | "server" | "network" | "empty" | "client" | "unknown";
+
+/**
+ * Coarse, PII-free classification of a failure for telemetry/logging — never
+ * includes the raw error message (which may echo user input or provider detail).
+ */
+export function getRetryErrorType(error: unknown): RetryErrorType {
+  if (error instanceof EmptyModelResponseError) {
+    return "empty";
+  }
+  const status = extractStatus(error);
+  if (status === 429) {
+    return "rate_limit";
+  }
+  if (status !== null && status >= 500) {
+    return "server";
+  }
+  if (status !== null && status >= 400) {
+    return "client";
+  }
+  const code = extractErrorCode(error);
+  if (code && RETRYABLE_NETWORK_CODES.has(code)) {
+    return "network";
+  }
+  return "unknown";
 }
 
 export function isRetryableError(error: unknown): boolean {
+  if (error instanceof EmptyModelResponseError) {
+    return true;
+  }
   const status = extractStatus(error);
   if (status !== null && RETRYABLE_STATUS.has(status)) {
     return true;
@@ -181,11 +229,16 @@ export async function withRetry<T>(
   let lastError: unknown;
 
   while (attempt <= config.maxRetries) {
+    options.signal?.throwIfAborted();
     try {
       return await operation();
     } catch (error) {
       lastError = error;
-      if (!config.shouldRetry(error) || attempt === config.maxRetries) {
+      if (
+        options.signal?.aborted ||
+        !config.shouldRetry(error) ||
+        attempt === config.maxRetries
+      ) {
         throw error;
       }
       const delayMs = computeDelayMs({

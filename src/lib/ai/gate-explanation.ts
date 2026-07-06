@@ -3,6 +3,7 @@ import { getGeminiClient } from "@/lib/ai/client";
 import { generateContentWithFallback } from "@/lib/ai/generate";
 import { ModelTier, getMaxOutputTokens } from "@/lib/ai/models";
 import { KAI_SAFETY_SETTINGS } from "@/lib/ai/safety";
+import { enrichmentSignal } from "@/lib/ai/timeouts";
 import type { CrowdStatus, GateRecommendation, UserContext } from "@/types/stadium";
 
 type ExplainGateInput = {
@@ -40,6 +41,7 @@ export async function explainGateRecommendation(
     const response = await generateContentWithFallback({
       client,
       tier: ModelTier.FAST,
+      signal: enrichmentSignal(),
       buildParams: () => ({
         contents: prompt,
         config: {

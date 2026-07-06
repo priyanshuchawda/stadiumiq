@@ -4,6 +4,7 @@ import { generateContentWithFallback } from "@/lib/ai/generate";
 import { ModelTier, getMaxOutputTokens } from "@/lib/ai/models";
 import { buildRepairPrompt, parseStructuredOutput } from "@/lib/ai/structured-output";
 import { KAI_SAFETY_SETTINGS } from "@/lib/ai/safety";
+import { enrichmentSignal } from "@/lib/ai/timeouts";
 import { DashboardAiOutputSchema } from "@/lib/validation/schemas/dashboard";
 import type { DashboardAiInsights } from "@/types/dashboard";
 import type { IncidentSummary } from "@/server/services/ops-service";
@@ -65,6 +66,8 @@ async function requestStructuredSummary(
   const response = await generateContentWithFallback({
     client,
     tier: ModelTier.FAST,
+    retryOnEmpty: true,
+    signal: enrichmentSignal(),
     buildParams: () => ({
       contents: prompt,
       config: {

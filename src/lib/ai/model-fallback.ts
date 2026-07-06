@@ -1,4 +1,9 @@
-import { extractErrorCode, extractStatus, readRetryAfterMs } from "@/lib/ai/with-retry";
+import {
+  EmptyModelResponseError,
+  extractErrorCode,
+  extractStatus,
+  readRetryAfterMs,
+} from "@/lib/ai/with-retry";
 
 export type ModelFailureKind = "transient" | "terminal" | "unknown";
 
@@ -31,24 +36,49 @@ const TRANSIENT_MESSAGE_FRAGMENTS = [
 
 export const DEFAULT_MODEL_COOLDOWN_MS = 45_000;
 
+/** Per-day quota exhaustion won't recover within a session → skip the model. */
+function isPerDayQuotaExhausted(message: string): boolean {
+  return (
+    (message.includes("perday") || message.includes("per day")) &&
+    (message.includes("quota") || message.includes("limit"))
+  );
+}
+
+function isTerminalFailure(status: number | null, message: string): boolean {
+  if (isPerDayQuotaExhausted(message)) {
+    return true;
+  }
+  if (status !== null && TERMINAL_STATUS.has(status)) {
+    return true;
+  }
+  return TERMINAL_MODEL_PATTERNS.some((pattern) => pattern.test(message));
+}
+
+function isTransientFailure(
+  status: number | null,
+  message: string,
+  code: string | null,
+): boolean {
+  if (status !== null && TRANSIENT_STATUS.has(status)) {
+    return true;
+  }
+  if (code && TRANSIENT_NETWORK_CODES.has(code)) {
+    return true;
+  }
+  return TRANSIENT_MESSAGE_FRAGMENTS.some((fragment) => message.includes(fragment));
+}
+
 export function classifyModelFailure(error: unknown): ModelFailureKind {
+  if (error instanceof EmptyModelResponseError) {
+    return "transient";
+  }
   const status = extractStatus(error);
   const message = error instanceof Error ? error.message.toLowerCase() : "";
 
-  if (status !== null && TERMINAL_STATUS.has(status)) {
+  if (isTerminalFailure(status, message)) {
     return "terminal";
   }
-  if (TERMINAL_MODEL_PATTERNS.some((pattern) => pattern.test(message))) {
-    return "terminal";
-  }
-  if (status !== null && TRANSIENT_STATUS.has(status)) {
-    return "transient";
-  }
-  const code = extractErrorCode(error);
-  if (code && TRANSIENT_NETWORK_CODES.has(code)) {
-    return "transient";
-  }
-  if (TRANSIENT_MESSAGE_FRAGMENTS.some((fragment) => message.includes(fragment))) {
+  if (isTransientFailure(status, message, extractErrorCode(error))) {
     return "transient";
   }
   return "unknown";

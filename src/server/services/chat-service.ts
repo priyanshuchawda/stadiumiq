@@ -10,7 +10,11 @@ export type ChatHandlerResult =
   | { ok: true; stream: ReadableStream<Uint8Array> }
   | { ok: false; status: number; message: string; retryAfter?: number };
 
-export function handleChatRequest(body: unknown, clientKey: string): ChatHandlerResult {
+export function handleChatRequest(
+  body: unknown,
+  clientKey: string,
+  signal?: AbortSignal,
+): ChatHandlerResult {
   const parsed = ChatRequestSchema.safeParse(body);
   if (!parsed.success) {
     return { ok: false, status: 400, message: "Invalid request." };
@@ -29,6 +33,7 @@ export function handleChatRequest(body: unknown, clientKey: string): ChatHandler
   const events = streamKai({
     context: toUserContext(parsed.data.context),
     message: parsed.data.message,
+    ...(signal ? { signal } : {}),
   });
 
   return { ok: true, stream: createSseStream(events) };

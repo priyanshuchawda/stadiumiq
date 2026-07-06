@@ -4,6 +4,7 @@ import {
   createModelHealthRegistry,
   runWithModelFallback,
 } from "@/lib/ai/model-fallback";
+import { EmptyModelResponseError } from "@/lib/ai/with-retry";
 
 describe("classifyModelFailure", () => {
   it("classifies transient status codes", () => {
@@ -25,6 +26,18 @@ describe("classifyModelFailure", () => {
 
   it("treats unknown errors as unknown", () => {
     expect(classifyModelFailure(new Error("weird parsing bug"))).toBe("unknown");
+  });
+
+  it("treats an EmptyModelResponseError as transient", () => {
+    expect(classifyModelFailure(new EmptyModelResponseError())).toBe("transient");
+  });
+
+  it("treats per-day quota exhaustion as terminal", () => {
+    expect(
+      classifyModelFailure(
+        new Error("Quota exceeded: GenerateRequestsPerDayPerProject limit"),
+      ),
+    ).toBe("terminal");
   });
 });
 

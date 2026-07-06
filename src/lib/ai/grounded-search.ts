@@ -6,6 +6,8 @@ import { ModelTier, getMaxOutputTokens } from "@/lib/ai/models";
 import { parseGroundingMetadata } from "@/lib/ai/parse-grounding";
 import { buildGroundedSystemPrompt, wrapUserMessage } from "@/lib/ai/prompts";
 import { KAI_SAFETY_SETTINGS } from "@/lib/ai/safety";
+import { stripUnsafeUnicode } from "@/lib/ai/sanitize";
+import { enrichmentSignal } from "@/lib/ai/timeouts";
 import {
   getGreenestOption,
   getTransportOptions,
@@ -57,6 +59,8 @@ async function callGroundedModel(
     const response = await generateContentWithFallback({
       client,
       tier: ModelTier.BALANCED,
+      retryOnEmpty: true,
+      signal: enrichmentSignal(),
       buildParams: () => ({
         contents: wrapUserMessage(request.message),
         config: {
@@ -69,7 +73,7 @@ async function callGroundedModel(
       }),
     });
 
-    const answer = response.text?.trim() ?? "";
+    const answer = stripUnsafeUnicode(response.text?.trim() ?? "");
     const grounding = parseGroundingMetadata(
       response.candidates?.[0]?.groundingMetadata,
     );

@@ -122,6 +122,28 @@ describe("/api/chat integration (MSW-mocked Gemini)", () => {
     expect(body).toContain("getCrowdStatus");
   });
 
+  it("tolerates metadata-only/empty chunks interleaved with real tokens", async () => {
+    server.use(
+      http.post(/:streamGenerateContent/, () => {
+        const emptyChunk = `data: ${JSON.stringify({
+          candidates: [{ content: { role: "model", parts: [] } }],
+        })}\n\n`;
+        const textChunk = `data: ${JSON.stringify({
+          candidates: [
+            { content: { role: "model", parts: [{ text: "Gate C is best." }] } },
+          ],
+        })}\n\n`;
+        return new HttpResponse(`${emptyChunk}${textChunk}${emptyChunk}`, {
+          headers: { "Content-Type": "text/event-stream" },
+        });
+      }),
+    );
+    const response = await POST(chatRequest(validBody, "203.0.113.22"));
+    const body = await readStream(response);
+    expect(body).toContain("Gate C is best.");
+    expect(body).toContain('"type":"done"');
+  });
+
   it("falls back to a canned answer when the stream yields no tokens", async () => {
     server.use(
       http.post(/:streamGenerateContent/, () => {

@@ -9,6 +9,7 @@ export type KaiRequest = {
   context: UserContext;
   message: string;
   tier?: ModelTier;
+  signal?: AbortSignal;
 };
 
 export type KaiResponse = {
@@ -40,6 +41,7 @@ export async function askKai(request: KaiRequest): Promise<KaiResponse> {
     tier: request.tier ?? ModelTier.BALANCED,
     context: request.context,
     message: request.message,
+    ...(request.signal ? { signal: request.signal } : {}),
   });
 
   const payload = loopResult
