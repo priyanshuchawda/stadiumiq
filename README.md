@@ -5,6 +5,7 @@
 StadiumIQ is an enterprise-grade web application that pairs a role-aware AI copilot (**Kai**) with live operational dashboards. It helps **fans, volunteers, venue staff, and organizers** navigate venues, manage crowds, plan accessible routes, find transport, and make real-time operational decisions — using **Google Gemini** (tools, streaming, grounding, multimodal) on a **free-tier, production-shaped** Next.js stack.
 
 **Author:** Priyanshu Chawda  
+**Live app:** [stadiumiq-mauve.vercel.app](https://stadiumiq-mauve.vercel.app/)  
 **Repository:** [github.com/priyanshuchawda/stadiumiq](https://github.com/priyanshuchawda/stadiumiq)
 
 ---
@@ -21,7 +22,7 @@ We chose this vertical because it combines high-stakes **real-time decision supp
 | **Crowd management**           | Simulated live density heatmap, gate recommendations by wait + mobility       |
 | **Accessibility**              | `UserContext.accessibility` drives step-free routes, gate logic, and prompts  |
 | **Transportation**             | Grounded Google Search answers + seeded eco-scoring fallback                  |
-| **Multilingual assistance**    | Language in context; Spanish demo journey; multilingual sentiment digest      |
+| **Multilingual assistance**    | Language in context; Spanish persona journey; multilingual sentiment digest   |
 | **Operational intelligence**   | Organizer dashboard: KPIs, incidents, AI summaries, staffing suggestions      |
 | **Real-time decision support** | Staff/volunteer copilot with tools + SOPs + crowd status                      |
 
@@ -37,7 +38,7 @@ We chose this vertical because it combines high-stakes **real-time decision supp
 2. **Ground facts in tools or search** — Stadium data never comes from model imagination. Kai calls **function tools** against seeded repositories, or **Google Search grounding** for live transport/news — with mandatory citations in the UI.
 3. **Server-only AI** — Gemini runs exclusively in Route Handlers / server modules (`import "server-only"`). The API key never reaches the browser.
 4. **Validate every boundary** — Zod `.strict()` on all inputs and AI structured outputs; repair once, then fallback.
-5. **Graceful degradation** — Missing API key, rate limits, or provider errors show clear UI messages and **cached/seed fallbacks** so demos never crash.
+5. **Graceful degradation** — Missing API key, rate limits, or provider errors show clear UI messages and **cached/seed fallbacks** so the experience never crashes.
 6. **Security by default** — Rate limiting, CSP, https-only citation links, sanitized grounding HTML, prompt-injection mitigations ([`SECURITY.md`](./SECURITY.md)).
 
 ### Decision logic (examples)
@@ -120,7 +121,7 @@ flowchart TB
 
 ### 4. Data & “live” feel
 
-Crowd density **simulates** time-varying offsets from deterministic seeds — enough to demo heatmaps, gate logic, and dashboards without paid feeds. Repositories are interface-backed for future DB/API swap.
+Crowd density **simulates** time-varying offsets from deterministic seeds — powering heatmaps, gate logic, and dashboards without paid feeds. Repositories are interface-backed for a straightforward future DB/API swap.
 
 ---
 
@@ -162,9 +163,9 @@ npm start
 
 ---
 
-## Demo script (5 persona journeys)
+## Guided tour (5 persona journeys)
 
-Each journey is **one click** from the home page demo cards.
+Each journey is **one click** from the home page journey cards — try them live at [stadiumiq-mauve.vercel.app](https://stadiumiq-mauve.vercel.app/).
 
 | #   | Persona                   | Path                                     | What to show                                                                   |
 | --- | ------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------ |
@@ -284,7 +285,7 @@ Notes:
 
 ## License & attribution
 
-Private submission project — FIFA World Cup 2026 hackathon scope.  
-Operational map data and venue layout are **fictional/demo seeds**, not official FIFA or venue data.
+Built for FIFA World Cup 2026 stadium operations.  
+Operational map data and venue layout are **original seeded datasets** created for this project, not official FIFA or venue data.
 
 For security details see [`SECURITY.md`](./SECURITY.md). For test layout see [`tests/README.md`](./tests/README.md). For operations see [`docs/operations-runbook.md`](./docs/operations-runbook.md).

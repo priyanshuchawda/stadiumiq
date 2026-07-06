@@ -28,11 +28,11 @@ const journeys = [
   },
 ] as const;
 
-export function DemoJourneys(): React.JSX.Element {
+export function PersonaJourneys(): React.JSX.Element {
   return (
-    <section aria-labelledby="demo-journeys-heading">
-      <h2 id="demo-journeys-heading" className="mb-4 text-2xl font-semibold">
-        Demo journeys
+    <section aria-labelledby="persona-journeys-heading">
+      <h2 id="persona-journeys-heading" className="mb-4 text-2xl font-semibold">
+        Persona journeys
       </h2>
       <ul className="grid gap-4 sm:grid-cols-2">
         {journeys.map((journey) => (

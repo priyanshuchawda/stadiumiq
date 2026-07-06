@@ -14,7 +14,7 @@ StadiumIQ is a GenAI web app (Next.js 16, server-side Gemini calls). The assets 
 | Seeded operational data                                   | Low                             | Static in repo                                          |
 | Availability of AI endpoints                              | Medium (DoS / quota exhaustion) | Route Handlers                                          |
 
-We deliberately **do not collect** names, emails, accounts, or payment data. There is no user database in the demo.
+We deliberately **do not collect** names, emails, accounts, or payment data. There is no user database in this release.
 
 ## 2. Trust Boundaries
 
@@ -111,15 +111,15 @@ Static headers live in `next.config.ts`; the nonce-bearing CSP is set per-reques
 ## 5. Safe Failure Behavior
 
 - Missing `GEMINI_API_KEY` → friendly UI banner, app still boots (never crashes).
-- Gemini unavailable / rate-limited / content blocked → safe fallback message + cached/mock answer so the demo never dies.
+- Gemini unavailable / rate-limited / content blocked → safe fallback message + cached/seeded answer so the experience never dies.
 - All server errors → generic client message + redacted server log with correlation id. No stack traces or prompts leak to users.
 
-## 6. Out of Scope (demo constraints, documented honestly)
+## 6. Roadmap to full production (documented honestly)
 
-- No real authentication/authorization system (no user accounts in the demo). If productionized, add auth (e.g., OIDC), per-user rate limits, and a secrets manager.
+- No real authentication/authorization system yet (no user accounts in this release). Next step: add auth (e.g., OIDC), per-user rate limits, and a secrets manager.
 - Operational data is seeded/simulated, not a live feed.
 - Rate limiting is in-memory (single instance); production should use a shared store (e.g., Upstash/Redis).
 
 ## 7. Reporting
 
-This is a hackathon/demo project. For real deployments, add a `security contact` and coordinated-disclosure process here.
+For security reports, contact the author via the repository. A formal coordinated-disclosure process will accompany full production rollout.

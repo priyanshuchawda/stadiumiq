@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { DemoJourneys } from "@/components/home/demo-journeys";
+import { PersonaJourneys } from "@/components/home/persona-journeys";
 
 export default function HomePage(): React.JSX.Element {
   return (
@@ -31,7 +31,7 @@ export default function HomePage(): React.JSX.Element {
           </Link>
         </div>
       </section>
-      <DemoJourneys />
+      <PersonaJourneys />
     </main>
   );
 }
