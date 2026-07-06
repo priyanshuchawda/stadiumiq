@@ -10,7 +10,7 @@ export default defineConfig({
           name: "unit",
           environment: "node",
           include: ["src/**/*.test.ts", "tests/unit/**/*.test.ts"],
-          exclude: ["tests/e2e/**"],
+          exclude: ["tests/e2e/**", "tests/live/**"],
         },
       },
       {
@@ -20,7 +20,16 @@ export default defineConfig({
           environment: "jsdom",
           setupFiles: ["./tests/setup.ts"],
           include: ["src/**/*.test.tsx", "tests/component/**/*.test.tsx"],
-          exclude: ["tests/e2e/**"],
+          exclude: ["tests/e2e/**", "tests/live/**"],
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: "live",
+          environment: "node",
+          setupFiles: ["./tests/live/setup.ts"],
+          include: ["tests/live/**/*.test.ts"],
         },
       },
     ],
@@ -38,6 +47,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "server-only": path.resolve(__dirname, "./tests/mocks/server-only.ts"),
     },
   },
 });
