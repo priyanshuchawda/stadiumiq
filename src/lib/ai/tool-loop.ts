@@ -4,6 +4,7 @@ import { generateContentWithFallback } from "@/lib/ai/generate";
 import { getMaxOutputTokens, ModelTier } from "@/lib/ai/models";
 import { buildSystemPrompt, wrapUserMessage } from "@/lib/ai/prompts";
 import { KAI_SAFETY_SETTINGS } from "@/lib/ai/safety";
+import { stripUnsafeUnicode } from "@/lib/ai/sanitize";
 import { STADIUM_TOOL_DECLARATIONS } from "@/lib/ai/tool-declarations";
 import { createToolLoopGuard, MAX_TOOL_TURNS } from "@/lib/ai/tool-loop-guard";
 import { applyToolCalls } from "@/lib/ai/tool-turn";
@@ -17,14 +18,19 @@ type ToolLoopInput = {
   signal?: AbortSignal;
 };
 
-type ToolLoopResult = {
-  answer: string;
+export type ToolLoopOutcome = {
+  /** Final model text, or null when the loop ended without an answer. */
+  answer: string | null;
   usedTools: string[];
+  /** Full conversation including tool calls/results, for streaming re-use. */
+  contents: Content[];
 };
 
-export async function runToolLoop(
-  input: ToolLoopInput,
-): Promise<ToolLoopResult | null> {
+/**
+ * Single source of truth for the Gemini function-calling loop. Used by both
+ * the non-streaming assistant service and the SSE streaming path.
+ */
+export async function runToolLoop(input: ToolLoopInput): Promise<ToolLoopOutcome> {
   const usedTools: string[] = [];
   const guard = createToolLoopGuard();
   const contents: Content[] = [
@@ -65,9 +71,9 @@ export async function runToolLoop(
 
     const answer = response.text?.trim();
     if (answer) {
-      return { answer, usedTools };
+      return { answer: stripUnsafeUnicode(answer), usedTools, contents };
     }
   }
 
-  return null;
+  return { answer: null, usedTools, contents };
 }

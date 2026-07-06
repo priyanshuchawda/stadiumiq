@@ -175,3 +175,16 @@ Format:
 - Consequences: Safer against prompt injection and runaway loops; more resilient to quota/empty responses; render-time AI is bounded so a slow provider degrades to fallback fast. Streaming falls back on mid-turn cancellation; abort is client-only (provider still bills in-flight tokens).
 
 ---
+
+## ADR-020: Full judging-criteria audit pass (security, efficiency, a11y, testing)
+
+- Date: 2026-07-07
+- Status: Accepted
+- Context: A comparative audit against the reference implementations (smart-crowd-navigator, Claude Code, Gemini CLI) surfaced remaining gaps across the five judging criteria: a bypassable regex HTML sanitizer, unprotected AI-backed routes, a duplicated tool loop, a redundant second Gemini call per chat turn, and screen-reader issues on the interactive map.
+- Decision:
+  - **Security**: DOMPurify (allowlist) replaces the regex grounding-HTML sanitizer, applied server-side and again at the render boundary; rate limiting extended to dashboard/map routes via a shared `enforceRateLimit` guard; `getClientKey` prefers platform-set `x-real-ip` over spoofable `x-forwarded-for`; stale rate-limit buckets are evicted; POST AI routes enforce an `ALLOWED_ORIGINS` allowlist; the vision route rejects oversized uploads from `content-length` before buffering.
+  - **Efficiency**: `streamKai` reuses the tool loop's final text instead of a second model call; dashboard insights and gate explanations cached 60s in an `AsyncCache` with in-flight deduplication (stampede protection); grounded cache key includes persona + mobility; dashboard/map client shells render on the server (dropped `ssr: false`).
+  - **Code quality**: single shared `runToolLoop` powers both the blocking and streaming paths (deleted the duplicated loop in `stream-kai`); removed dead exports and duplicate test files; persona query param validated against `PERSONAS` instead of a cast.
+  - **Accessibility**: map SVG is a `group` (not `img`) so node buttons are reachable; decorative heatmap rings are `aria-hidden` (one tab stop per node); chat streaming no longer spams `aria-live` (completed replies announced once via a polite region); `lang` attributes on multilingual sentiment/chat content; focus moves to route results after planning.
+  - **Testing**: coverage widened to `server/http`, `server/security`, and the sanitizer; direct tests for client-key, origin-check, rate-limit guard, async-cache, and DOMPurify bypass vectors; shared fixtures in `tests/fixtures`; `tests/README.md`.
+- Consequences: All five judging criteria now have explicit, tested controls. In-memory caches/limits remain single-instance (documented in SECURITY.md 6); production would move them to a shared store.

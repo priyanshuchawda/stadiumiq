@@ -19,6 +19,7 @@ const EnvSchema = z.object({
   AI_MAX_OUTPUT_TOKENS: positiveNumericString("AI_MAX_OUTPUT_TOKENS"),
   GROUNDING_CACHE_TTL_SECONDS: positiveNumericString("GROUNDING_CACHE_TTL_SECONDS"),
   RATE_LIMIT_PER_MINUTE: positiveNumericString("RATE_LIMIT_PER_MINUTE"),
+  ALLOWED_ORIGINS: z.string().min(1).optional(),
   LOG_LEVEL: z
     .enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"])
     .optional(),

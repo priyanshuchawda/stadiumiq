@@ -4,7 +4,6 @@ import { createSseStream } from "@/lib/ai/sse";
 import { streamKai } from "@/lib/ai/stream-kai";
 import { ChatRequestSchema } from "@/lib/validation/schemas/chat";
 import { toUserContext } from "@/lib/validation/to-user-context";
-import { getClientKey } from "@/server/http/client-key";
 import {
   enforceRateLimit,
   type RateLimitGuardResult,
@@ -43,9 +42,4 @@ function toChatDenied(
     message: rate.message,
     retryAfter: rate.retryAfter,
   };
-}
-
-/** @deprecated Used only for logging correlation; prefer enforceRateLimit(request). */
-export function chatClientKey(request: Request): string {
-  return getClientKey(request);
 }

@@ -53,7 +53,7 @@ Everything crossing from untrusted → trusted is **validated with Zod** and tre
 
 - **Threat:** Malicious HTML in AI output, user input, or grounding content executes in the browser.
 - **Controls:**
-  - React auto-escaping everywhere. **No `dangerouslySetInnerHTML`** — the **only** exception is Gemini's `groundingMetadata.searchEntryPoint.renderedContent` (required by Google's Grounding display terms), which is sanitized and rendered in an isolated container. This is the single documented exception.
+  - React auto-escaping everywhere. **No `dangerouslySetInnerHTML`** — the **only** exception is Gemini's `groundingMetadata.searchEntryPoint.renderedContent` (required by Google's Grounding display terms), which is sanitized with **DOMPurify** (allowlist of tags/attributes, no unknown protocols, no data attributes) on the server (`parse-grounding.ts`) **and again at the render boundary** (`search-suggestions.tsx`) as defense in depth.
   - All rendered/outbound links validated to `https:` only and rendered with `rel="noopener noreferrer"` (blocks `javascript:`/`data:` and tab-nabbing).
   - Strict, **per-request nonce-based CSP** (set in `src/proxy.ts`) — production `script-src` uses `'nonce-…' 'strict-dynamic'` (no `'unsafe-inline'`); it also restricts `connect-src`/`img-src`/`frame-ancestors`/`object-src`. Development relaxes `script-src` (`'unsafe-eval'`) only so React Fast Refresh works.
 
@@ -66,7 +66,7 @@ Everything crossing from untrusted → trusted is **validated with Zod** and tre
 
 - **Threat:** Flooding AI endpoints drains free-tier quota or degrades service.
 - **Controls:**
-  - Per-client token-bucket rate limiting on all AI routes → `429` + `Retry-After`. The client key is derived from the first `X-Forwarded-For` hop (falling back to `X-Real-IP`), parsed in `src/server/http/client-key.ts`.
+  - Per-client token-bucket rate limiting on **all** AI-backed routes (chat, grounded, vision, dashboard, map crowd/route) → `429` + `Retry-After`. The client key prefers the platform-set `X-Real-IP` header over the spoofable `X-Forwarded-For` (`src/server/http/client-key.ts`). Stale buckets are evicted so the in-memory map cannot grow unbounded.
   - Hard raw request body-size cap (`readJsonWithLimit`, `src/server/http/read-json.ts`) rejects oversized JSON bodies with `413` before parsing — checked against both `Content-Length` and actual byte length. Multimodal uploads keep their own `MAX_IMAGE_BYTES` cap. Input length caps via Zod `.max`.
   - Short-TTL LRU cache for identical grounded queries; `flash-lite` for cheap tasks; capped `maxOutputTokens`.
   - Multi-model fallback + `Retry-After`-aware backoff (`src/lib/ai/model-fallback.ts`, `with-retry.ts`) shed load gracefully and respect provider throttling instead of hammering a rate-limited model.
@@ -85,7 +85,7 @@ Everything crossing from untrusted → trusted is **validated with Zod** and tre
 ### 3.8 CSRF
 
 - **Threat:** Cross-site requests trigger state changes.
-- **Controls:** Mutations via Server Actions (built-in CSRF protection) or POST Route Handlers with same-origin + JSON content-type checks.
+- **Controls:** POST AI routes enforce an **origin allowlist** (`assertAllowedOrigin`, configured via `ALLOWED_ORIGINS`) before reading the body; mutations otherwise use Server Actions (built-in CSRF protection) with same-origin + JSON content-type checks.
 
 ### 3.9 Supply chain
 

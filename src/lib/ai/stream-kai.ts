@@ -1,74 +1,16 @@
 import type { Content } from "@google/genai";
 import { getGeminiClient } from "@/lib/ai/client";
 import { buildKaiFallbackAnswer } from "@/lib/ai/fallback";
-import {
-  generateContentStreamWithFallback,
-  generateContentWithFallback,
-} from "@/lib/ai/generate";
+import { generateContentStreamWithFallback } from "@/lib/ai/generate";
 import type { StreamEvent } from "@/lib/ai/sse";
 import { ModelTier } from "@/lib/ai/models";
-import { buildSystemPrompt, wrapUserMessage } from "@/lib/ai/prompts";
+import { buildSystemPrompt } from "@/lib/ai/prompts";
 import { getMaxOutputTokens } from "@/lib/ai/models";
 import { KAI_SAFETY_SETTINGS } from "@/lib/ai/safety";
 import { stripUnsafeUnicode } from "@/lib/ai/sanitize";
-import { STADIUM_TOOL_DECLARATIONS } from "@/lib/ai/tool-declarations";
-import { createToolLoopGuard, MAX_TOOL_TURNS } from "@/lib/ai/tool-loop-guard";
-import { applyToolCalls } from "@/lib/ai/tool-turn";
+import { runToolLoop } from "@/lib/ai/tool-loop";
 import type { KaiRequest } from "@/lib/ai/assistant-service";
 import type { UserContext } from "@/types/stadium";
-
-type ToolTurnResult = {
-  usedTools: string[];
-  finalText?: string;
-};
-
-async function resolveToolTurns(
-  contents: Content[],
-  context: UserContext,
-  signal?: AbortSignal,
-): Promise<ToolTurnResult> {
-  const client = getGeminiClient();
-  if (!client) {
-    return { usedTools: [] };
-  }
-
-  const usedTools: string[] = [];
-  const guard = createToolLoopGuard();
-
-  for (let turn = 0; turn < MAX_TOOL_TURNS; turn += 1) {
-    signal?.throwIfAborted();
-    const response = await generateContentWithFallback({
-      client,
-      tier: ModelTier.BALANCED,
-      signal,
-      buildParams: () => ({
-        contents,
-        config: {
-          systemInstruction: buildSystemPrompt(context),
-          maxOutputTokens: getMaxOutputTokens(),
-          safetySettings: KAI_SAFETY_SETTINGS,
-          tools: [{ functionDeclarations: STADIUM_TOOL_DECLARATIONS }],
-        },
-      }),
-    });
-
-    const calls = response.functionCalls;
-    if (!calls || calls.length === 0) {
-      const text = response.text?.trim();
-      if (text) {
-        return { usedTools, finalText: stripUnsafeUnicode(text) };
-      }
-      break;
-    }
-
-    const looped = await applyToolCalls({ contents, calls, usedTools, guard, context });
-    if (looped) {
-      break;
-    }
-  }
-
-  return { usedTools };
-}
 
 async function* streamTokensFromGemini(
   contents: Content[],
@@ -112,23 +54,38 @@ function* streamText(text: string): Generator<string> {
   }
 }
 
+/**
+ * Streams a Kai answer as SSE events. Reuses the shared tool loop for
+ * function calling; when the loop already produced a final answer we stream
+ * it directly instead of paying for a second model call. The streaming API is
+ * only used when the loop ended without text (e.g. guard tripped).
+ */
 export async function* streamKai(request: KaiRequest): AsyncGenerator<StreamEvent> {
   const signal = request.signal;
-  const contents: Content[] = [
-    { role: "user", parts: [{ text: wrapUserMessage(request.message) }] },
-  ];
+  const client = getGeminiClient();
+  const fallback = !client;
 
-  const { usedTools, finalText } = await resolveToolTurns(
-    contents,
-    request.context,
-    signal,
-  );
+  let usedTools: string[] = [];
+  let finalText: string | null = null;
+  let contents: Content[] = [];
+
+  if (client) {
+    const outcome = await runToolLoop({
+      client,
+      tier: ModelTier.BALANCED,
+      context: request.context,
+      message: request.message,
+      ...(signal ? { signal } : {}),
+    });
+    usedTools = outcome.usedTools;
+    finalText = outcome.answer;
+    contents = outcome.contents;
+  }
+
   if (usedTools.length > 0) {
     yield { type: "tools", names: usedTools };
   }
 
-  const client = getGeminiClient();
-  const fallback = !client;
   let emitted = false;
 
   if (finalText) {

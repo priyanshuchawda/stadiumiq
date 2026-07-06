@@ -44,8 +44,12 @@ export async function askKai(request: KaiRequest): Promise<KaiResponse> {
     ...(request.signal ? { signal: request.signal } : {}),
   });
 
-  const payload = loopResult
-    ? { answer: loopResult.answer, usedTools: loopResult.usedTools, fallback: false }
+  const payload = loopResult.answer
+    ? {
+        answer: loopResult.answer,
+        usedTools: loopResult.usedTools,
+        fallback: false,
+      }
     : buildFallbackResponse(request.context);
 
   responseCache.set(cacheKey, payload);

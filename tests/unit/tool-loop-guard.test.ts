@@ -70,7 +70,7 @@ describe("runToolLoop with a deterministic fake model", () => {
       message: "loop please",
     });
 
-    expect(result).toBeNull();
+    expect(result.answer).toBeNull();
     expect(fake.generateContentCalls).toBeLessThanOrEqual(5);
   });
 
