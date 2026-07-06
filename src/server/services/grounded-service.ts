@@ -3,7 +3,10 @@ import "server-only";
 import { askGroundedKai } from "@/lib/ai/grounded-search";
 import { GroundedRequestSchema } from "@/lib/validation/schemas/grounding";
 import { toUserContext } from "@/lib/validation/to-user-context";
-import { checkRateLimit } from "@/server/security/rate-limit";
+import {
+  enforceRateLimit,
+  type RateLimitGuardResult,
+} from "@/server/http/rate-limit-guard";
 import type { GroundedAnswer } from "@/types/grounding";
 
 export type GroundedHandlerResult =
@@ -12,21 +15,16 @@ export type GroundedHandlerResult =
 
 export async function handleGroundedRequest(
   body: unknown,
-  clientKey: string,
+  request: Request,
 ): Promise<GroundedHandlerResult> {
+  const rate = enforceRateLimit(request);
+  if (!rate.ok) {
+    return toGroundedDenied(rate);
+  }
+
   const parsed = GroundedRequestSchema.safeParse(body);
   if (!parsed.success) {
     return { ok: false, status: 400, message: "Invalid request." };
-  }
-
-  const rate = checkRateLimit(clientKey);
-  if (!rate.allowed) {
-    return {
-      ok: false,
-      status: 429,
-      message: "Too many requests. Please wait and try again.",
-      retryAfter: rate.retryAfterSeconds,
-    };
   }
 
   const payload = await askGroundedKai({
@@ -35,4 +33,15 @@ export async function handleGroundedRequest(
   });
 
   return { ok: true, payload };
+}
+
+function toGroundedDenied(
+  rate: Extract<RateLimitGuardResult, { ok: false }>,
+): GroundedHandlerResult {
+  return {
+    ok: false,
+    status: rate.status,
+    message: rate.message,
+    retryAfter: rate.retryAfter,
+  };
 }

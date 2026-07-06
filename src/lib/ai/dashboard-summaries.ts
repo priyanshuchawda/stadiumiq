@@ -1,4 +1,5 @@
 import "server-only";
+import { AsyncCache } from "@/lib/ai/async-cache";
 import { getGeminiClient } from "@/lib/ai/client";
 import { generateContentWithFallback } from "@/lib/ai/generate";
 import { ModelTier, getMaxOutputTokens } from "@/lib/ai/models";
@@ -14,7 +15,23 @@ type BuildInsightsInput = {
   staffing: string[];
 };
 
+const insightsCache = new AsyncCache<DashboardAiInsights>(16, 60_000);
+
+export function clearDashboardInsightsCacheForTests(): void {
+  insightsCache.clear();
+}
+
 export async function buildDashboardAiInsights(
+  input: BuildInsightsInput,
+): Promise<DashboardAiInsights> {
+  const key = JSON.stringify({
+    incidents: input.incidents,
+    staffing: input.staffing,
+  });
+  return insightsCache.getOrLoad(key, () => buildDashboardAiInsightsUncached(input));
+}
+
+async function buildDashboardAiInsightsUncached(
   input: BuildInsightsInput,
 ): Promise<DashboardAiInsights> {
   const client = getGeminiClient();

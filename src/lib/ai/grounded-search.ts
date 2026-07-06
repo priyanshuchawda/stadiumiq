@@ -1,7 +1,7 @@
 import "server-only";
+import { AsyncCache } from "@/lib/ai/async-cache";
 import { getGeminiClient } from "@/lib/ai/client";
 import { generateContentWithFallback } from "@/lib/ai/generate";
-import { LruCache } from "@/lib/ai/lru-cache";
 import { ModelTier, getMaxOutputTokens } from "@/lib/ai/models";
 import { parseGroundingMetadata } from "@/lib/ai/parse-grounding";
 import { buildGroundedSystemPrompt, wrapUserMessage } from "@/lib/ai/prompts";
@@ -21,7 +21,7 @@ export type GroundedRequest = {
 };
 
 const DEFAULT_TTL_SECONDS = 300;
-const groundedCache = new LruCache<GroundedAnswer>(40, readGroundingCacheTtlMs());
+const groundedCache = new AsyncCache<GroundedAnswer>(40, readGroundingCacheTtlMs());
 
 export function clearGroundedCacheForTests(): void {
   groundedCache.clear();
@@ -36,19 +36,19 @@ function readGroundingCacheTtlMs(): number {
 export async function askGroundedKai(
   request: GroundedRequest,
 ): Promise<GroundedAnswer> {
-  const cacheKey = `${request.context.language}:${request.message.trim().toLowerCase()}`;
-  const cached = groundedCache.get(cacheKey);
-  if (cached) {
-    return cached;
-  }
+  const cacheKey = [
+    request.context.language,
+    request.context.persona,
+    request.context.accessibility.mobility,
+    request.message.trim().toLowerCase(),
+  ].join(":");
 
-  const client = getGeminiClient();
-  const payload = client
-    ? await callGroundedModel(client, request)
-    : buildTransportFallback(request);
-
-  groundedCache.set(cacheKey, payload);
-  return payload;
+  return groundedCache.getOrLoad(cacheKey, async () => {
+    const client = getGeminiClient();
+    return client
+      ? await callGroundedModel(client, request)
+      : buildTransportFallback(request);
+  });
 }
 
 async function callGroundedModel(

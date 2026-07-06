@@ -5,7 +5,6 @@ import type { CrowdAreaView } from "@/types/map";
 type CrowdHeatmapProps = {
   areas: CrowdAreaView[];
   selectedNodeId?: string | undefined;
-  onSelectNode?: ((nodeId: string) => void) | undefined;
 };
 
 function findCrowdForNode(
@@ -18,21 +17,19 @@ function findCrowdForNode(
 export function CrowdHeatmap({
   areas,
   selectedNodeId,
-  onSelectNode,
 }: CrowdHeatmapProps): React.JSX.Element {
   const heatmapNodes = MAP_NODE_LAYOUTS.filter((node) =>
     ["gate", "concourse"].includes(node.kind),
   );
 
   return (
-    <g aria-label="Crowd density heatmap">
+    <g aria-label="Crowd density heatmap" aria-hidden="true">
       {heatmapNodes.map((node) => (
         <HeatmapNode
           key={node.id}
           node={node}
           crowd={findCrowdForNode(node.id, areas)}
           selected={selectedNodeId === node.id}
-          onSelect={onSelectNode}
         />
       ))}
     </g>

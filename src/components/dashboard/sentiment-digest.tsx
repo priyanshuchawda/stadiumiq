@@ -10,6 +10,12 @@ const TONE_LABELS: Record<SentimentEntry["tone"], string> = {
   concerned: "Concerned",
 };
 
+const LANGUAGE_NAMES: Record<string, string> = {
+  en: "English",
+  es: "Spanish",
+  fr: "French",
+};
+
 export function SentimentDigest({ entries }: SentimentDigestProps): React.JSX.Element {
   return (
     <section
@@ -21,10 +27,13 @@ export function SentimentDigest({ entries }: SentimentDigestProps): React.JSX.El
         {entries.map((entry) => (
           <li
             key={entry.language}
+            lang={entry.language}
             className="rounded-lg bg-zinc-50 p-3 text-sm dark:bg-zinc-900"
           >
             <div className="flex items-center justify-between gap-2">
-              <span className="font-medium uppercase">{entry.language}</span>
+              <span className="font-medium">
+                {LANGUAGE_NAMES[entry.language] ?? entry.language.toUpperCase()}
+              </span>
               <span className="rounded bg-zinc-200 px-2 py-0.5 text-xs dark:bg-zinc-800">
                 {TONE_LABELS[entry.tone]}
               </span>

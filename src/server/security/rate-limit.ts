@@ -4,6 +4,7 @@ type Bucket = {
 };
 
 const buckets = new Map<string, Bucket>();
+const MAX_BUCKETS = 10_000;
 
 export type RateLimitConfig = {
   limit: number;
@@ -20,11 +21,24 @@ export type RateLimitResult = {
   retryAfterSeconds: number;
 };
 
+function pruneStaleBuckets(now: number, windowMs: number): void {
+  if (buckets.size <= MAX_BUCKETS) {
+    return;
+  }
+  for (const [key, bucket] of buckets) {
+    if (now - bucket.lastRefill >= windowMs * 2) {
+      buckets.delete(key);
+    }
+  }
+}
+
 export function checkRateLimit(
   key: string,
   config: RateLimitConfig = DEFAULT_CONFIG,
 ): RateLimitResult {
   const now = Date.now();
+  pruneStaleBuckets(now, config.windowMs);
+
   const bucket = buckets.get(key) ?? { tokens: config.limit, lastRefill: now };
   const elapsed = now - bucket.lastRefill;
 

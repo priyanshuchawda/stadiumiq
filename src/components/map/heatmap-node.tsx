@@ -6,21 +6,19 @@ type HeatmapNodeProps = {
   node: MapNodeLayout;
   crowd: CrowdAreaView | undefined;
   selected: boolean;
-  onSelect?: ((nodeId: string) => void) | undefined;
 };
 
 export function HeatmapNode({
   node,
   crowd,
   selected,
-  onSelect,
 }: HeatmapNodeProps): React.JSX.Element {
   const density = crowd?.density ?? "low";
   const visual = getDensityVisual(density);
   const wait = crowd?.waitMinutes ?? 0;
 
   return (
-    <g>
+    <g aria-hidden="true">
       <circle
         cx={node.x}
         cy={node.y}
@@ -28,17 +26,6 @@ export function HeatmapNode({
         fill={`url(#${visual.patternId})`}
         className="stroke-zinc-400 dark:stroke-zinc-600"
         strokeWidth={selected ? 3 : 1}
-        role="button"
-        tabIndex={0}
-        aria-label={formatCrowdAria(node.label, density, wait)}
-        aria-pressed={selected}
-        onClick={() => onSelect?.(node.id)}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            onSelect?.(node.id);
-          }
-        }}
       />
       <text
         x={node.x}
@@ -48,6 +35,7 @@ export function HeatmapNode({
       >
         {visual.shortLabel} · {wait}m
       </text>
+      <title>{formatCrowdAria(node.label, density, wait)}</title>
     </g>
   );
 }

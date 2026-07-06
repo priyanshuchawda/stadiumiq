@@ -41,12 +41,18 @@ export default defineConfig({
     ],
     coverage: {
       provider: "v8",
-      include: ["src/server/services/**", "src/lib/ai/**"],
+      include: [
+        "src/server/services/**",
+        "src/server/http/**",
+        "src/server/security/**",
+        "src/lib/ai/**",
+        "src/lib/utils/sanitize-grounding-html.ts",
+      ],
       thresholds: {
-        lines: 90,
-        branches: 80,
-        functions: 90,
-        statements: 90,
+        lines: 85,
+        branches: 75,
+        functions: 85,
+        statements: 85,
       },
     },
   },

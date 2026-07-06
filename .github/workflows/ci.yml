@@ -6,6 +6,13 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
   quality:
     name: Quality (${{ matrix.os }})
@@ -15,12 +22,14 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364ed9af2a # v4.2.2
+      - uses: actions/setup-node@49933ea5289caeca8642d1e84afbd3f444d1a086 # v4.4.0
         with:
           node-version: "22"
           cache: npm
       - run: npm ci
+      - name: Verify lockfile integrity
+        run: npm ci --ignore-scripts
       - run: npm run typecheck
       - run: npm run lint
       - run: npm run test
@@ -33,8 +42,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: quality
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364ed9af2a # v4.2.2
+      - uses: actions/setup-node@49933ea5289caeca8642d1e84afbd3f444d1a086 # v4.4.0
         with:
           node-version: "22"
           cache: npm
@@ -49,8 +58,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: quality
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364ed9af2a # v4.2.2
+      - uses: actions/setup-node@49933ea5289caeca8642d1e84afbd3f444d1a086 # v4.4.0
         with:
           node-version: "22"
           cache: npm

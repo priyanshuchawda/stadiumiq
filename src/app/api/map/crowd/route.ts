@@ -1,11 +1,21 @@
 import { buildMapCrowdSnapshot } from "@/server/services/map-service";
 import { mapErrorToResponse } from "@/server/http/error-response";
+import {
+  enforceRateLimit,
+  rateLimitJsonResponse,
+} from "@/server/http/rate-limit-guard";
 import { MapCrowdQuerySchema } from "@/lib/validation/schemas/map";
 import { UserContextSchema } from "@/lib/validation/schemas/stadium";
 import { toUserContext } from "@/lib/validation/to-user-context";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request: Request): Promise<Response> {
   try {
+    const rate = enforceRateLimit(request);
+    if (!rate.ok) {
+      return rateLimitJsonResponse(rate);
+    }
     return await handleCrowdRequest(request);
   } catch (error) {
     return mapErrorToResponse(error, { route: "GET /api/map/crowd" });
@@ -36,5 +46,5 @@ async function handleCrowdRequest(request: Request): Promise<Response> {
   );
 
   const snapshot = await buildMapCrowdSnapshot(context);
-  return Response.json(snapshot);
+  return Response.json(snapshot, { headers: { "Cache-Control": "no-store" } });
 }

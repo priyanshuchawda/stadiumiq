@@ -7,6 +7,7 @@ export type ChatMessage = {
   role: "user" | "assistant";
   content: string;
   grounding?: GroundedAnswer | undefined;
+  language?: string | undefined;
 };
 
 type StreamMeta = { fallback: boolean; usedTools: string[] };

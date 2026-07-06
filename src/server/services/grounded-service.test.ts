@@ -1,5 +1,7 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, beforeEach, vi } from "vitest";
 import { handleGroundedRequest } from "@/server/services/grounded-service";
+import { makeApiRequest } from "../../../tests/fixtures/contexts";
+import { resetRateLimitsForTests } from "@/server/security/rate-limit";
 
 vi.mock("@/lib/ai/grounded-search", () => ({
   askGroundedKai: vi.fn(async () => ({
@@ -13,6 +15,10 @@ vi.mock("@/lib/ai/grounded-search", () => ({
 }));
 
 describe("handleGroundedRequest", () => {
+  beforeEach(() => {
+    resetRateLimitsForTests();
+  });
+
   it("returns grounded payload for valid requests", async () => {
     const result = await handleGroundedRequest(
       {
@@ -27,7 +33,7 @@ describe("handleGroundedRequest", () => {
           },
         },
       },
-      "test-client",
+      makeApiRequest("/api/grounded"),
     );
 
     expect(result.ok).toBe(true);
@@ -37,7 +43,10 @@ describe("handleGroundedRequest", () => {
   });
 
   it("rejects invalid bodies", async () => {
-    const result = await handleGroundedRequest({ bad: true }, "test-client");
+    const result = await handleGroundedRequest(
+      { bad: true },
+      makeApiRequest("/api/grounded"),
+    );
     expect(result.ok).toBe(false);
   });
 });

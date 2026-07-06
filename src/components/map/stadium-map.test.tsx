@@ -20,12 +20,12 @@ const sampleAreas = [
 ];
 
 describe("StadiumMap", () => {
-  it("renders map title and density labels", () => {
+  it("renders map landmarks and selectable gate nodes", () => {
     render(<StadiumMap areas={sampleAreas} routeNodeIds={["gate-c", "section-112"]} />);
     expect(
-      screen.getByRole("img", { name: /Liberty Stadium map/i }),
+      screen.getByRole("group", { name: /Liberty Stadium map/i }),
     ).toBeInTheDocument();
     expect(screen.getAllByText(/High · 8m/i).length).toBeGreaterThan(0);
-    expect(screen.getByLabelText(/Gate B: High density/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Gate B" })).toBeInTheDocument();
   });
 });

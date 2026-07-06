@@ -45,6 +45,6 @@ describe("ChatWindow", () => {
     const sendButtons = screen.getAllByRole("button", { name: /^send$/i });
     await user.click(sendButtons[0]!);
 
-    expect(await screen.findByText(/Gate C/)).toBeInTheDocument();
+    expect((await screen.findAllByText(/Gate C/)).length).toBeGreaterThan(0);
   });
 });

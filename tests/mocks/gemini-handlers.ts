@@ -47,7 +47,10 @@ export const generateContentHandler = http.post(
   /:generateContent/,
   async ({ request }) => {
     const raw = await request.text();
-    if (raw.includes("application/json")) {
+    const isStructuredDashboard =
+      raw.includes('"responseMimeType":"application/json"') ||
+      raw.includes("responseMimeType: 'application/json'");
+    if (isStructuredDashboard) {
       return jsonResponse(DASHBOARD_JSON, false);
     }
     return jsonResponse("Gate C has the shortest wait right now.", true);

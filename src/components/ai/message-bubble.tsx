@@ -6,17 +6,23 @@ type MessageBubbleProps = {
   role: "user" | "assistant";
   content: string;
   grounding?: GroundedAnswer | undefined;
+  language?: string | undefined;
+  ariaLive?: "off" | "polite" | "assertive" | undefined;
 };
 
 export function MessageBubble({
   role,
   content,
   grounding,
+  language,
+  ariaLive,
 }: MessageBubbleProps): React.JSX.Element {
   const isUser = role === "user";
   return (
     <div
       dir="auto"
+      lang={language}
+      aria-live={ariaLive}
       className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm ${
         isUser
           ? "ml-auto bg-emerald-700 text-white"

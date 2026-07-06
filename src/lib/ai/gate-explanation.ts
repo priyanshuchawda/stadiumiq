@@ -1,4 +1,5 @@
 import "server-only";
+import { AsyncCache } from "@/lib/ai/async-cache";
 import { getGeminiClient } from "@/lib/ai/client";
 import { generateContentWithFallback } from "@/lib/ai/generate";
 import { ModelTier, getMaxOutputTokens } from "@/lib/ai/models";
@@ -12,7 +13,28 @@ type ExplainGateInput = {
   crowdStatuses: CrowdStatus[];
 };
 
+const explanationCache = new AsyncCache<string>(32, 60_000);
+
+export function clearGateExplanationCacheForTests(): void {
+  explanationCache.clear();
+}
+
 export async function explainGateRecommendation(
+  input: ExplainGateInput,
+): Promise<string> {
+  const key = JSON.stringify({
+    language: input.context.language,
+    mobility: input.context.accessibility.mobility,
+    gate: input.recommendation.recommendedGate,
+    reason: input.recommendation.reason,
+    crowd: input.crowdStatuses.map((item) => `${item.area}:${item.waitMinutes}`),
+  });
+  return explanationCache.getOrLoad(key, () =>
+    explainGateRecommendationUncached(input),
+  );
+}
+
+async function explainGateRecommendationUncached(
   input: ExplainGateInput,
 ): Promise<string> {
   const client = getGeminiClient();

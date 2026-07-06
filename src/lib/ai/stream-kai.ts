@@ -17,14 +17,19 @@ import { applyToolCalls } from "@/lib/ai/tool-turn";
 import type { KaiRequest } from "@/lib/ai/assistant-service";
 import type { UserContext } from "@/types/stadium";
 
+type ToolTurnResult = {
+  usedTools: string[];
+  finalText?: string;
+};
+
 async function resolveToolTurns(
   contents: Content[],
   context: UserContext,
   signal?: AbortSignal,
-): Promise<string[]> {
+): Promise<ToolTurnResult> {
   const client = getGeminiClient();
   if (!client) {
-    return [];
+    return { usedTools: [] };
   }
 
   const usedTools: string[] = [];
@@ -49,6 +54,10 @@ async function resolveToolTurns(
 
     const calls = response.functionCalls;
     if (!calls || calls.length === 0) {
+      const text = response.text?.trim();
+      if (text) {
+        return { usedTools, finalText: stripUnsafeUnicode(text) };
+      }
       break;
     }
 
@@ -58,7 +67,7 @@ async function resolveToolTurns(
     }
   }
 
-  return usedTools;
+  return { usedTools };
 }
 
 async function* streamTokensFromGemini(
@@ -96,15 +105,11 @@ async function* streamTokensFromGemini(
   }
 }
 
-function* streamFallbackText(text: string): Generator<string> {
+function* streamText(text: string): Generator<string> {
   const words = text.split(" ");
   for (const word of words) {
     yield `${word} `;
   }
-}
-
-function buildFallbackText(context: UserContext): string {
-  return buildKaiFallbackAnswer(context);
 }
 
 export async function* streamKai(request: KaiRequest): AsyncGenerator<StreamEvent> {
@@ -113,25 +118,42 @@ export async function* streamKai(request: KaiRequest): AsyncGenerator<StreamEven
     { role: "user", parts: [{ text: wrapUserMessage(request.message) }] },
   ];
 
-  const usedTools = await resolveToolTurns(contents, request.context, signal);
+  const { usedTools, finalText } = await resolveToolTurns(
+    contents,
+    request.context,
+    signal,
+  );
   if (usedTools.length > 0) {
     yield { type: "tools", names: usedTools };
   }
 
   const client = getGeminiClient();
   const fallback = !client;
-  const tokenStream = client
-    ? streamTokensFromGemini(contents, request.context, signal)
-    : streamFallbackText(buildFallbackText(request.context));
-
   let emitted = false;
-  for await (const token of tokenStream) {
-    emitted = true;
-    yield { type: "token", text: token };
+
+  if (finalText) {
+    for (const token of streamText(finalText)) {
+      emitted = true;
+      yield { type: "token", text: token };
+    }
+  } else if (client) {
+    for await (const token of streamTokensFromGemini(
+      contents,
+      request.context,
+      signal,
+    )) {
+      emitted = true;
+      yield { type: "token", text: token };
+    }
+  } else {
+    for (const token of streamText(buildKaiFallbackAnswer(request.context))) {
+      emitted = true;
+      yield { type: "token", text: token };
+    }
   }
 
-  if (!emitted && client) {
-    yield { type: "token", text: buildFallbackText(request.context) };
+  if (!emitted) {
+    yield { type: "token", text: buildKaiFallbackAnswer(request.context) };
   }
 
   yield { type: "done", fallback, usedTools };

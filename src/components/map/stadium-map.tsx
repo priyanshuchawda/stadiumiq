@@ -20,22 +20,18 @@ export function StadiumMap({
   return (
     <svg
       viewBox={`0 0 ${MAP_VIEWBOX.width} ${MAP_VIEWBOX.height}`}
-      role="img"
+      role="group"
       aria-labelledby="stadium-map-title stadium-map-desc"
-      className="h-auto w-full max-w-3xl rounded-xl border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950"
+      className="h-auto w-full max-w-3xl rounded-xl border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 [&_circle[role=button]:focus-visible]:outline [&_circle[role=button]:focus-visible]:outline-2 [&_circle[role=button]:focus-visible]:outline-offset-2 [&_circle[role=button]:focus-visible]:outline-emerald-600"
     >
       <title id="stadium-map-title">Liberty Stadium map</title>
       <desc id="stadium-map-desc">
-        Schematic map with gates, concourses, sections, crowd density patterns, and
-        route overlay.
+        Interactive schematic map with gates, concourses, sections, crowd density
+        patterns, and route overlay. Use Tab to move between selectable locations.
       </desc>
       <DensityPatterns />
       <RouteOverlay nodeIds={routeNodeIds} />
-      <CrowdHeatmap
-        areas={areas}
-        selectedNodeId={selectedNodeId}
-        onSelectNode={onSelectNode}
-      />
+      <CrowdHeatmap areas={areas} selectedNodeId={selectedNodeId} />
       <MapNodes selectedNodeId={selectedNodeId} onSelectNode={onSelectNode} />
     </svg>
   );
@@ -79,6 +75,7 @@ function MapNodes({ selectedNodeId, onSelectNode }: MapNodesProps): React.JSX.El
               x={node.x}
               y={node.y + 4}
               textAnchor="middle"
+              aria-hidden="true"
               className="fill-zinc-900 text-[10px] font-semibold dark:fill-zinc-50"
             >
               {node.label.replace("Section ", "Sec ")}

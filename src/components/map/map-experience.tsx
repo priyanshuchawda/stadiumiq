@@ -1,5 +1,6 @@
 "use client";
 
+import { forwardRef, useEffect, useRef } from "react";
 import { GateRecommendationPanel } from "@/components/map/gate-recommendation-panel";
 import { MapControls } from "@/components/map/map-controls";
 import { StadiumMap } from "@/components/map/stadium-map";
@@ -13,6 +14,13 @@ type MapExperienceProps = {
 
 export function MapExperience({ initialCrowd }: MapExperienceProps): React.JSX.Element {
   const map = useMapState(initialCrowd);
+  const routeRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (map.route) {
+      routeRef.current?.focus();
+    }
+  }, [map.route]);
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
@@ -23,7 +31,7 @@ export function MapExperience({ initialCrowd }: MapExperienceProps): React.JSX.E
           selectedNodeId={map.from}
           onSelectNode={map.setFrom}
         />
-        {map.route ? <RouteSteps route={map.route.route} /> : null}
+        {map.route ? <RouteSteps ref={routeRef} route={map.route.route} /> : null}
         {map.error ? (
           <p
             role="alert"
@@ -54,11 +62,17 @@ export function MapExperience({ initialCrowd }: MapExperienceProps): React.JSX.E
   );
 }
 
-function RouteSteps({ route }: { route: RouteResult }): React.JSX.Element {
+const RouteSteps = forwardRef<HTMLElement, { route: RouteResult }>(function RouteSteps(
+  { route },
+  ref,
+): React.JSX.Element {
   return (
     <section
+      ref={ref}
+      tabIndex={-1}
+      aria-live="polite"
       aria-label="Route steps"
-      className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800"
+      className="rounded-xl border border-zinc-200 p-4 outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 dark:border-zinc-800"
     >
       <h2 className="text-lg font-semibold">
         {route.from} → {route.to} ({route.totalMinutes} min)
@@ -73,4 +87,4 @@ function RouteSteps({ route }: { route: RouteResult }): React.JSX.Element {
       </ol>
     </section>
   );
-}
+});

@@ -1,19 +1,7 @@
 "use client";
 
-import dynamic from "next/dynamic";
+import { MapExperience } from "@/components/map/map-experience";
 import type { MapCrowdSnapshot } from "@/types/map";
-
-const MapExperience = dynamic(
-  () => import("@/components/map/map-experience").then((mod) => mod.MapExperience),
-  {
-    loading: () => (
-      <p className="text-zinc-600 dark:text-zinc-400" role="status">
-        Loading stadium map…
-      </p>
-    ),
-    ssr: false,
-  },
-);
 
 type MapClientShellProps = {
   initialCrowd: MapCrowdSnapshot;

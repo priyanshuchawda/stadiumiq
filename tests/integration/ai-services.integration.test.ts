@@ -5,19 +5,16 @@ import { geminiHandlers } from "../mocks/gemini-handlers";
 import { resetGeminiClientForTests } from "@/lib/ai/client";
 import { askKai, clearKaiCacheForTests } from "@/lib/ai/assistant-service";
 import { clearGroundedCacheForTests } from "@/lib/ai/grounded-search";
+import { clearDashboardInsightsCacheForTests } from "@/lib/ai/dashboard-summaries";
+import { clearGateExplanationCacheForTests } from "@/lib/ai/gate-explanation";
 import { handleGroundedRequest } from "@/server/services/grounded-service";
 import { analyzeVisionImage } from "@/server/services/vision-service";
 import { buildDashboardSnapshot } from "@/server/services/dashboard-service";
 import { buildMapCrowdSnapshot } from "@/server/services/map-service";
+import { fanContext, makeApiRequest } from "../fixtures/contexts";
 import type { UserContext } from "@/types/stadium";
 
 const server = setupServer(...geminiHandlers);
-
-const fanContext: UserContext = {
-  persona: "fan",
-  language: "en",
-  accessibility: { mobility: "none", lowVision: false, sensorySensitive: false },
-};
 
 describe("AI services with mocked Gemini (MSW)", () => {
   beforeAll(() => {
@@ -29,6 +26,8 @@ describe("AI services with mocked Gemini (MSW)", () => {
   beforeEach(() => {
     clearKaiCacheForTests();
     clearGroundedCacheForTests();
+    clearDashboardInsightsCacheForTests();
+    clearGateExplanationCacheForTests();
     server.resetHandlers();
   });
 
@@ -106,7 +105,7 @@ describe("AI services with mocked Gemini (MSW)", () => {
         message: "How do I get downtown after the match?",
         context: fanContext,
       },
-      "198.51.100.5",
+      makeApiRequest("/api/grounded", "198.51.100.5"),
     );
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -195,11 +194,11 @@ describe("AI services with mocked Gemini (MSW)", () => {
   it("grounded requests are served from cache on repeat", async () => {
     const first = await handleGroundedRequest(
       { message: "repeatable transit question", context: fanContext },
-      "198.51.100.9",
+      makeApiRequest("/api/grounded", "198.51.100.9"),
     );
     const second = await handleGroundedRequest(
       { message: "repeatable transit question", context: fanContext },
-      "198.51.100.9",
+      makeApiRequest("/api/grounded", "198.51.100.9"),
     );
     expect(first.ok).toBe(true);
     expect(second.ok).toBe(true);

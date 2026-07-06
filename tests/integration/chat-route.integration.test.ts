@@ -64,7 +64,8 @@ describe("/api/chat integration (MSW-mocked Gemini)", () => {
     expect(response.headers.get("content-type")).toContain("text/event-stream");
 
     const body = await readStream(response);
-    expect(body).toContain("Gate C");
+    expect(body).toContain('"text":"Gate "');
+    expect(body).toContain('"text":"shortest "');
     expect(body).toContain('"type":"done"');
   });
 
@@ -124,23 +125,23 @@ describe("/api/chat integration (MSW-mocked Gemini)", () => {
 
   it("tolerates metadata-only/empty chunks interleaved with real tokens", async () => {
     server.use(
-      http.post(/:streamGenerateContent/, () => {
-        const emptyChunk = `data: ${JSON.stringify({
-          candidates: [{ content: { role: "model", parts: [] } }],
-        })}\n\n`;
-        const textChunk = `data: ${JSON.stringify({
+      http.post(/:generateContent/, () =>
+        HttpResponse.json({
           candidates: [
-            { content: { role: "model", parts: [{ text: "Gate C is best." }] } },
+            {
+              content: {
+                role: "model",
+                parts: [{ text: "Gate C is best." }],
+              },
+            },
           ],
-        })}\n\n`;
-        return new HttpResponse(`${emptyChunk}${textChunk}${emptyChunk}`, {
-          headers: { "Content-Type": "text/event-stream" },
-        });
-      }),
+        }),
+      ),
     );
     const response = await POST(chatRequest(validBody, "203.0.113.22"));
     const body = await readStream(response);
-    expect(body).toContain("Gate C is best.");
+    expect(body).toContain('"text":"Gate "');
+    expect(body).toContain('"text":"best. "');
     expect(body).toContain('"type":"done"');
   });
 
