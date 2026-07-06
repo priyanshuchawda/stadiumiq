@@ -8,7 +8,12 @@ on:
 
 jobs:
   quality:
-    runs-on: ubuntu-latest
+    name: Quality (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -19,8 +24,47 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm run test
+      - run: npm run coverage
+      - run: npm run build
+      - run: npm audit --audit-level=high
+
+  e2e:
+    name: E2E + a11y
+    runs-on: ubuntu-latest
+    needs: quality
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
       - run: npm run build
       - run: npx playwright install chromium --with-deps
       - run: npm run test:e2e
       - run: npm run test:a11y
-      - run: npm audit --audit-level=high
+
+  smoke:
+    name: Health smoke
+    runs-on: ubuntu-latest
+    needs: quality
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Start server and probe /api/health
+        run: |
+          npm run start &
+          SERVER_PID=$!
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:3000/api/health > health.json; then
+              echo "Health OK"; cat health.json; break
+            fi
+            sleep 2
+          done
+          node -e "const h=require('./health.json'); if(h.status!=='ok'){process.exit(1)}"
+          kill $SERVER_PID

@@ -1,14 +1,17 @@
 import type { Content } from "@google/genai";
 import { getGeminiClient } from "@/lib/ai/client";
 import { buildKaiFallbackAnswer } from "@/lib/ai/fallback";
+import {
+  generateContentStreamWithFallback,
+  generateContentWithFallback,
+} from "@/lib/ai/generate";
 import type { StreamEvent } from "@/lib/ai/sse";
-import { ModelTier, resolveModelId } from "@/lib/ai/models";
+import { ModelTier } from "@/lib/ai/models";
 import { buildSystemPrompt, wrapUserMessage } from "@/lib/ai/prompts";
 import { getMaxOutputTokens } from "@/lib/ai/models";
 import { KAI_SAFETY_SETTINGS } from "@/lib/ai/safety";
 import { STADIUM_TOOL_DECLARATIONS } from "@/lib/ai/tool-declarations";
 import { executeToolCall } from "@/lib/ai/tool-executors";
-import { withRetry } from "@/lib/ai/with-retry";
 import type { KaiRequest } from "@/lib/ai/assistant-service";
 import type { UserContext } from "@/types/stadium";
 
@@ -21,13 +24,13 @@ async function resolveToolTurns(
     return [];
   }
 
-  const model = resolveModelId(ModelTier.BALANCED);
   const usedTools: string[] = [];
 
   for (let turn = 0; turn < 4; turn += 1) {
-    const response = await withRetry(() =>
-      client.models.generateContent({
-        model,
+    const response = await generateContentWithFallback({
+      client,
+      tier: ModelTier.BALANCED,
+      buildParams: () => ({
         contents,
         config: {
           systemInstruction: buildSystemPrompt(context),
@@ -36,7 +39,7 @@ async function resolveToolTurns(
           tools: [{ functionDeclarations: STADIUM_TOOL_DECLARATIONS }],
         },
       }),
-    );
+    });
 
     const calls = response.functionCalls;
     if (!calls || calls.length === 0) {
@@ -72,10 +75,10 @@ async function* streamTokensFromGemini(
     return;
   }
 
-  const model = resolveModelId(ModelTier.BALANCED);
-  const stream = await withRetry(() =>
-    client.models.generateContentStream({
-      model,
+  const stream = await generateContentStreamWithFallback({
+    client,
+    tier: ModelTier.BALANCED,
+    buildParams: () => ({
       contents,
       config: {
         systemInstruction: buildSystemPrompt(context),
@@ -83,7 +86,7 @@ async function* streamTokensFromGemini(
         safetySettings: KAI_SAFETY_SETTINGS,
       },
     }),
-  );
+  });
 
   for await (const chunk of stream) {
     const text = chunk.text;

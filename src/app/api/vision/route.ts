@@ -9,6 +9,9 @@ import {
 import { toUserContext } from "@/lib/validation/to-user-context";
 import { analyzeVisionImage } from "@/server/services/vision-service";
 
+export const runtime = "nodejs";
+export const maxDuration = 30;
+
 function isAllowedMime(mime: string): mime is (typeof ALLOWED_IMAGE_MIMES)[number] {
   return (ALLOWED_IMAGE_MIMES as readonly string[]).includes(mime);
 }

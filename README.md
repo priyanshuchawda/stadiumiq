@@ -181,13 +181,16 @@ Each journey is **one click** from the home page demo cards.
 ## Testing & quality gates
 
 ```bash
-npm run typecheck      # TypeScript strict
-npm run lint           # ESLint 9 + a11y + security, zero warnings
-npm test               # Vitest unit + component (47+ tests)
-npm run test:e2e       # Playwright — 5 journeys + core pages
-npm run test:a11y      # axe — WCAG 2.x on key routes
-npm run coverage       # Coverage thresholds on core services
-npm audit              # No high/critical vulnerabilities
+npm run typecheck              # TypeScript strict
+npm run lint                   # ESLint 9 + a11y + security, zero warnings
+npm test                       # Vitest unit + component
+npm run test:behavior          # MSW-driven AI behavior baselines (snapshots)
+npm run test:behavior:update   # Update baselines after intentional changes
+npm run test:perf              # Routing/gate performance baselines
+npm run test:e2e               # Playwright — 5 journeys + core pages
+npm run test:a11y              # axe — WCAG 2.x on key routes
+npm run coverage               # Coverage thresholds on core services
+npm audit                      # No high/critical vulnerabilities
 ```
 
 Live Gemini smoke test (optional, uses your key):
@@ -197,22 +200,27 @@ Live Gemini smoke test (optional, uses your key):
 $env:GEMINI_LIVE_TEST="true"; npm run test:live
 ```
 
-CI runs on every push to `main` (see [`.github/workflows/ci.yml`](./.github/workflows/ci.yml)).
+CI runs on every push to `main` (see [`.github/workflows/ci.yml`](./.github/workflows/ci.yml)): a cross-OS matrix (Ubuntu + Windows) for typecheck/lint/test/coverage/build, a Playwright e2e + a11y job, and a `/api/health` smoke job. Static analysis via **CodeQL** and dependency updates via **Dependabot** run alongside it.
+
+### Resilience & liveness
+
+- **Multi-model fallback** — each request tries an ordered Gemini model chain; a model that returns transient errors is put in cooldown (honoring `Retry-After`), and a model-not-found/4xx is skipped permanently, so the request degrades to the next model instead of failing (`src/lib/ai/model-fallback.ts`).
+- **Health probe** — `GET /api/health` returns status, AI mode (`live` vs `fallback`), and the resolved model chains (no secrets). Used by the CI smoke job.
 
 ---
 
 ## Evaluation criteria mapping
 
-| Criterion                     | How StadiumIQ addresses it                                            |
-| ----------------------------- | --------------------------------------------------------------------- |
-| **Smart dynamic assistant**   | Kai + tools + grounding; streams; multimodal vision                   |
-| **Logical context decisions** | `UserContext` drives prompts, tools, routing, gates — tested          |
-| **Code quality**              | TS strict, layered architecture, ESLint size/complexity caps          |
-| **Security**                  | Server-only AI, Zod, rate limits, CSP, [`SECURITY.md`](./SECURITY.md) |
-| **Testing**                   | Unit, component, e2e, a11y, live smoke; MSW-ready AI mocks            |
-| **Accessibility**             | Skip links, aria-live, keyboard map, patterns+labels, axe clean       |
-| **Efficiency**                | RSC-first, SSE streaming, LRU caches, flash-lite for cheap tasks      |
-| **Usability**                 | 5 journeys ≤3 clicks, fallbacks, empty/error states                   |
+| Criterion                     | How StadiumIQ addresses it                                                           |
+| ----------------------------- | ------------------------------------------------------------------------------------ |
+| **Smart dynamic assistant**   | Kai + tools + grounding; streams; multimodal vision                                  |
+| **Logical context decisions** | `UserContext` drives prompts, tools, routing, gates — tested                         |
+| **Code quality**              | TS strict, layered architecture, ESLint size/complexity caps                         |
+| **Security**                  | Server-only AI, Zod, rate limits, CSP, [`SECURITY.md`](./SECURITY.md)                |
+| **Testing**                   | Unit, component, integration (MSW), behavior + perf baselines, e2e, a11y, live smoke |
+| **Accessibility**             | Skip links, aria-live, keyboard map, patterns+labels, forced-colors, axe clean       |
+| **Efficiency**                | RSC-first, SSE streaming, LRU caches, flash-lite + multi-model fallback              |
+| **Usability**                 | 5 journeys ≤3 clicks, fallbacks, empty/error states                                  |
 
 ---
 
@@ -242,8 +250,37 @@ Full build plan: [`plan.md`](./plan.md) · Enforced standards: [`rules.md`](./ru
 | Styling    | Tailwind CSS v4                                     |
 | AI         | `@google/genai` — `gemini-2.5-flash` / `flash-lite` |
 | Validation | Zod 4                                               |
-| Tests      | Vitest 4, Playwright, axe-core                      |
-| CI         | GitHub Actions (Node 22)                            |
+| Tests      | Vitest 4, Playwright, axe-core, MSW                 |
+| CI         | GitHub Actions (Node 22), CodeQL, Dependabot        |
+| Deploy     | Vercel (Next.js native)                             |
+
+---
+
+## Deployment (Vercel)
+
+The app is a standard Next.js 16 App Router project with no external services required (no Firebase/DB) — it runs on Vercel out of the box.
+
+```bash
+# One-time
+npm i -g vercel        # if not already installed
+vercel login
+
+# From the project root
+vercel                 # create/link project + preview deploy
+vercel --prod          # production deploy
+```
+
+Set the environment variable in the Vercel dashboard (Project → Settings → Environment Variables) or via CLI:
+
+```bash
+vercel env add GEMINI_API_KEY
+```
+
+Notes:
+
+- AI routes (`/api/chat`, `/api/vision`, `/api/grounded`) run on the Node.js runtime with `maxDuration = 30` for streaming/vision headroom.
+- Security headers ship via `next.config.ts`; the per-request nonce CSP ships via `src/proxy.ts` (Vercel-compatible middleware).
+- Without `GEMINI_API_KEY`, every AI feature still works via deterministic fallbacks — safe for preview deploys.
 
 ---
 

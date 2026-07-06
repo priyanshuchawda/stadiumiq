@@ -1,9 +1,9 @@
 import "server-only";
 import { getGeminiClient } from "@/lib/ai/client";
-import { ModelTier, getMaxOutputTokens, resolveModelId } from "@/lib/ai/models";
+import { generateContentWithFallback } from "@/lib/ai/generate";
+import { ModelTier, getMaxOutputTokens } from "@/lib/ai/models";
 import { buildRepairPrompt, parseStructuredOutput } from "@/lib/ai/structured-output";
 import { KAI_SAFETY_SETTINGS } from "@/lib/ai/safety";
-import { withRetry } from "@/lib/ai/with-retry";
 import { DashboardAiOutputSchema } from "@/lib/validation/schemas/dashboard";
 import type { DashboardAiInsights } from "@/types/dashboard";
 import type { IncidentSummary } from "@/server/services/ops-service";
@@ -62,9 +62,10 @@ async function requestStructuredSummary(
   client: NonNullable<ReturnType<typeof getGeminiClient>>,
   prompt: string,
 ): Promise<string> {
-  const response = await withRetry(() =>
-    client.models.generateContent({
-      model: resolveModelId(ModelTier.FAST),
+  const response = await generateContentWithFallback({
+    client,
+    tier: ModelTier.FAST,
+    buildParams: () => ({
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -73,7 +74,7 @@ async function requestStructuredSummary(
         safetySettings: KAI_SAFETY_SETTINGS,
       },
     }),
-  );
+  });
   return response.text?.trim() ?? "{}";
 }
 

@@ -46,6 +46,31 @@
   }
 }
 
+/* Windows High Contrast / forced-colors mode: keep focus + interactive
+   affordances visible when author colors are overridden by the OS. */
+@media (forced-colors: active) {
+  :focus-visible {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+  }
+
+  a,
+  button,
+  [role="button"] {
+    forced-color-adjust: auto;
+  }
+
+  ::selection {
+    background: Highlight;
+    color: HighlightText;
+  }
+}
+
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);

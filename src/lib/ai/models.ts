@@ -15,6 +15,18 @@ export function resolveModelId(tier: ModelTier): string {
   return process.env["AI_MODEL_BALANCED"] ?? DEFAULT_MODELS[ModelTier.BALANCED];
 }
 
+/**
+ * Ordered model fallback chain for a tier: the tier's primary model first,
+ * then the other tier's model as a resilience fallback (deduplicated).
+ */
+export function getModelChain(tier: ModelTier): string[] {
+  const primary = resolveModelId(tier);
+  const secondary = resolveModelId(
+    tier === ModelTier.FAST ? ModelTier.BALANCED : ModelTier.FAST,
+  );
+  return [...new Set([primary, secondary])];
+}
+
 export function getMaxOutputTokens(): number {
   const raw = process.env["AI_MAX_OUTPUT_TOKENS"];
   const parsed = raw ? Number.parseInt(raw, 10) : 1024;

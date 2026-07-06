@@ -1,7 +1,7 @@
 import { getGeminiClient } from "@/lib/ai/client";
 import { buildKaiFallbackAnswer } from "@/lib/ai/fallback";
 import { LruCache } from "@/lib/ai/lru-cache";
-import { ModelTier, resolveModelId } from "@/lib/ai/models";
+import { ModelTier } from "@/lib/ai/models";
 import { runToolLoop } from "@/lib/ai/tool-loop";
 import type { UserContext } from "@/types/stadium";
 
@@ -35,10 +35,9 @@ export async function askKai(request: KaiRequest): Promise<KaiResponse> {
     return buildFallbackResponse(request.context);
   }
 
-  const model = resolveModelId(request.tier ?? ModelTier.BALANCED);
   const loopResult = await runToolLoop({
     client,
-    model,
+    tier: request.tier ?? ModelTier.BALANCED,
     context: request.context,
     message: request.message,
   });

@@ -1,0 +1,42 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`assistant behavior baselines (MSW-mocked Gemini) > askKai envelope is stable for a fan gate question 1`] = `
+{
+  "fallback": false,
+  "hasAnswer": true,
+  "usedTools": [],
+}
+`;
+
+exports[`assistant behavior baselines (MSW-mocked Gemini) > askKai envelope is stable for a wheelchair user 1`] = `
+{
+  "fallback": false,
+  "hasAnswer": true,
+  "usedTools": [],
+}
+`;
+
+exports[`assistant behavior baselines (MSW-mocked Gemini) > dashboard AI envelope is stable 1`] = `
+{
+  "fallback": false,
+  "incidentSummary": "Gate B queue is elevated; dispatch stewards.",
+  "priorityActionCount": 2,
+  "sentimentLanguages": [
+    "en",
+    "es",
+  ],
+}
+`;
+
+exports[`assistant behavior baselines (MSW-mocked Gemini) > grounded envelope preserves https sources and search queries 1`] = `
+{
+  "fallback": false,
+  "sourceUris": [
+    "https://transit.example/routes",
+    "https://www.njtransit.com/",
+  ],
+  "webSearchQueries": [
+    "stadium transit after event",
+  ],
+}
+`;

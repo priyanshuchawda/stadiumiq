@@ -1,10 +1,10 @@
 import "server-only";
 
 import { getGeminiClient } from "@/lib/ai/client";
+import { generateContentWithFallback } from "@/lib/ai/generate";
 import { buildSystemPrompt, wrapUserMessage } from "@/lib/ai/prompts";
-import { getMaxOutputTokens, ModelTier, resolveModelId } from "@/lib/ai/models";
+import { getMaxOutputTokens, ModelTier } from "@/lib/ai/models";
 import { KAI_SAFETY_SETTINGS } from "@/lib/ai/safety";
-import { withRetry } from "@/lib/ai/with-retry";
 import type { UserContext } from "@/types/stadium";
 
 type VisionAnalysisInput = {
@@ -26,11 +26,11 @@ export async function analyzeVisionImage(
   }
 
   const bytes = Buffer.from(await file.arrayBuffer());
-  const model = resolveModelId(ModelTier.BALANCED);
 
-  const response = await withRetry(() =>
-    client.models.generateContent({
-      model,
+  const response = await generateContentWithFallback({
+    client,
+    tier: ModelTier.BALANCED,
+    buildParams: () => ({
       contents: [
         {
           role: "user",
@@ -46,7 +46,7 @@ export async function analyzeVisionImage(
         safetySettings: KAI_SAFETY_SETTINGS,
       },
     }),
-  );
+  });
 
   return {
     answer: response.text?.trim() ?? "Could not analyze the image.",

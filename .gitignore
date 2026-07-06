@@ -49,3 +49,6 @@ Thumbs.db
 
 # Misc
 /.vercel
+
+# Reference-only project copied in for comparison (never part of this build)
+/smart-crowd-navigator

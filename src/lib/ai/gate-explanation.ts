@@ -1,8 +1,8 @@
 import "server-only";
 import { getGeminiClient } from "@/lib/ai/client";
-import { ModelTier, getMaxOutputTokens, resolveModelId } from "@/lib/ai/models";
+import { generateContentWithFallback } from "@/lib/ai/generate";
+import { ModelTier, getMaxOutputTokens } from "@/lib/ai/models";
 import { KAI_SAFETY_SETTINGS } from "@/lib/ai/safety";
-import { withRetry } from "@/lib/ai/with-retry";
 import type { CrowdStatus, GateRecommendation, UserContext } from "@/types/stadium";
 
 type ExplainGateInput = {
@@ -37,16 +37,17 @@ export async function explainGateRecommendation(
   ].join(" ");
 
   try {
-    const response = await withRetry(() =>
-      client.models.generateContent({
-        model: resolveModelId(ModelTier.FAST),
+    const response = await generateContentWithFallback({
+      client,
+      tier: ModelTier.FAST,
+      buildParams: () => ({
         contents: prompt,
         config: {
           maxOutputTokens: Math.min(256, getMaxOutputTokens()),
           safetySettings: KAI_SAFETY_SETTINGS,
         },
       }),
-    );
+    });
     const text = response.text?.trim();
     return text && text.length > 0 ? text : input.recommendation.reason;
   } catch {

@@ -1,16 +1,16 @@
 import type { Content, FunctionCall } from "@google/genai";
 import type { GoogleGenAI } from "@google/genai";
-import { getMaxOutputTokens } from "@/lib/ai/models";
+import { generateContentWithFallback } from "@/lib/ai/generate";
+import { getMaxOutputTokens, ModelTier } from "@/lib/ai/models";
 import { buildSystemPrompt, wrapUserMessage } from "@/lib/ai/prompts";
 import { KAI_SAFETY_SETTINGS } from "@/lib/ai/safety";
 import { STADIUM_TOOL_DECLARATIONS } from "@/lib/ai/tool-declarations";
 import { executeToolCall } from "@/lib/ai/tool-executors";
-import { withRetry } from "@/lib/ai/with-retry";
 import type { UserContext } from "@/types/stadium";
 
 type ToolLoopInput = {
   client: GoogleGenAI;
-  model: string;
+  tier: ModelTier;
   context: UserContext;
   message: string;
 };
@@ -29,9 +29,10 @@ export async function runToolLoop(
   ];
 
   for (let turn = 0; turn < 4; turn += 1) {
-    const response = await withRetry(() =>
-      input.client.models.generateContent({
-        model: input.model,
+    const response = await generateContentWithFallback({
+      client: input.client,
+      tier: input.tier,
+      buildParams: () => ({
         contents,
         config: {
           systemInstruction: buildSystemPrompt(input.context),
@@ -40,7 +41,7 @@ export async function runToolLoop(
           tools: [{ functionDeclarations: STADIUM_TOOL_DECLARATIONS }],
         },
       }),
-    );
+    });
 
     const calls = response.functionCalls;
     if (calls && calls.length > 0) {

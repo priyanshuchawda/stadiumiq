@@ -29,7 +29,14 @@ const eslintConfig = defineConfig([
       "max-lines": "off",
     },
   },
-  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts", "coverage/**"]),
+  globalIgnores([
+    ".next/**",
+    "out/**",
+    "build/**",
+    "next-env.d.ts",
+    "coverage/**",
+    "smart-crowd-navigator/**",
+  ]),
 ]);
 
 export default eslintConfig;

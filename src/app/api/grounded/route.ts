@@ -1,18 +1,15 @@
 import { getClientKey } from "@/server/http/client-key";
 import { mapErrorToResponse } from "@/server/http/error-response";
+import { readJsonWithLimit } from "@/server/http/read-json";
 import { handleGroundedRequest } from "@/server/services/grounded-service";
+
+export const runtime = "nodejs";
+export const maxDuration = 30;
 
 export async function POST(request: Request): Promise<Response> {
   try {
     const clientKey = getClientKey(request);
-    let body: unknown;
-
-    try {
-      body = await request.json();
-    } catch {
-      return Response.json({ error: "Invalid JSON body." }, { status: 400 });
-    }
-
+    const body = await readJsonWithLimit(request);
     const result = await handleGroundedRequest(body, clientKey);
     if (!result.ok) {
       const headers: Record<string, string> = {};

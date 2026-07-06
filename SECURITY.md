@@ -63,8 +63,9 @@ Everything crossing from untrusted → trusted is **validated with Zod** and tre
 - **Threat:** Flooding AI endpoints drains free-tier quota or degrades service.
 - **Controls:**
   - Per-client token-bucket rate limiting on all AI routes → `429` + `Retry-After`. The client key is derived from the first `X-Forwarded-For` hop (falling back to `X-Real-IP`), parsed in `src/server/http/client-key.ts`.
-  - Request body size caps; input length caps (Zod `.max`).
+  - Hard raw request body-size cap (`readJsonWithLimit`, `src/server/http/read-json.ts`) rejects oversized JSON bodies with `413` before parsing — checked against both `Content-Length` and actual byte length. Multimodal uploads keep their own `MAX_IMAGE_BYTES` cap. Input length caps via Zod `.max`.
   - Short-TTL LRU cache for identical grounded queries; `flash-lite` for cheap tasks; capped `maxOutputTokens`.
+  - Multi-model fallback + `Retry-After`-aware backoff (`src/lib/ai/model-fallback.ts`, `with-retry.ts`) shed load gracefully and respect provider throttling instead of hammering a rate-limited model.
   - Client-side debounce + `AbortController` cancels superseded requests.
 
 ### 3.6 Injection via structured output / untrusted JSON
@@ -85,7 +86,7 @@ Everything crossing from untrusted → trusted is **validated with Zod** and tre
 ### 3.9 Supply chain
 
 - **Threat:** Vulnerable/malicious dependencies.
-- **Controls:** `npm ci` (locked), `npm audit` in CI (fails on high/critical), pinned versions, no EOL/deprecated deps, minimal dependency surface.
+- **Controls:** `npm ci` (locked), `npm audit` in CI (fails on high/critical), pinned versions, no EOL/deprecated deps, minimal dependency surface. **CodeQL** (`security-and-quality`) static analysis and grouped **Dependabot** updates run in CI (`.github/`). Runtime env is shape-validated at startup (`validateServerEnv`), failing fast on invalid config in production.
 
 ### 3.10 Sensitive data in transit/logs
 

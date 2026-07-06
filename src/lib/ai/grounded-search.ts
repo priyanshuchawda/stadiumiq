@@ -1,11 +1,11 @@
 import "server-only";
 import { getGeminiClient } from "@/lib/ai/client";
+import { generateContentWithFallback } from "@/lib/ai/generate";
 import { LruCache } from "@/lib/ai/lru-cache";
-import { ModelTier, getMaxOutputTokens, resolveModelId } from "@/lib/ai/models";
+import { ModelTier, getMaxOutputTokens } from "@/lib/ai/models";
 import { parseGroundingMetadata } from "@/lib/ai/parse-grounding";
 import { buildGroundedSystemPrompt, wrapUserMessage } from "@/lib/ai/prompts";
 import { KAI_SAFETY_SETTINGS } from "@/lib/ai/safety";
-import { withRetry } from "@/lib/ai/with-retry";
 import {
   getGreenestOption,
   getTransportOptions,
@@ -54,9 +54,10 @@ async function callGroundedModel(
   request: GroundedRequest,
 ): Promise<GroundedAnswer> {
   try {
-    const response = await withRetry(() =>
-      client.models.generateContent({
-        model: resolveModelId(ModelTier.BALANCED),
+    const response = await generateContentWithFallback({
+      client,
+      tier: ModelTier.BALANCED,
+      buildParams: () => ({
         contents: wrapUserMessage(request.message),
         config: {
           systemInstruction: buildGroundedSystemPrompt(request.context),
@@ -66,7 +67,7 @@ async function callGroundedModel(
           safetySettings: KAI_SAFETY_SETTINGS,
         },
       }),
-    );
+    });
 
     const answer = response.text?.trim() ?? "";
     const grounding = parseGroundingMetadata(

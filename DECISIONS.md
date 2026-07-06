@@ -127,4 +127,36 @@ Format:
 - Decision: Mock the Gemini REST endpoints (`:generateContent`, `:streamGenerateContent`) with MSW (`tests/mocks/gemini-handlers.ts`) and exercise the real client paths in `tests/integration/**` — chat SSE streaming, tool-call turns, structured-output repair/fallback, vision, and grounding metadata parsing. Combined with focused unit tests, core coverage now meets ≥90% lines/functions and ≥80% branches with deterministic, network-free runs.
 - Consequences: No live API calls in CI; provider-shaped fixtures must track SDK request/response shape if the SDK major version changes.
 
+## ADR-015: Multi-model fallback chain with per-model health registry
+
+- Date: 2026-07-07
+- Status: Accepted
+- Context: A single balanced model + `withRetry` recovers from transient blips but not from a model being overloaded, rate-limited for an extended window, or removed/renamed by the provider. Demo resilience and the efficiency criterion benefit from graceful degradation across models.
+- Decision: Introduce an ordered per-tier model chain (`getModelChain`) and a health registry (`src/lib/ai/model-fallback.ts`) that classifies failures as `transient` (cooldown, honoring `Retry-After`), `terminal` (permanently skip: 4xx / model-not-found), or `unknown` (rethrow, don't mask real bugs). `runWithModelFallback` tries each healthy model in order; `withRetry` handles in-model transient retries, and the registry advances to the next model when a model stays unhealthy. All six Gemini entry points (chat streaming, tool loop, vision, grounded, gate, dashboard) call through the shared `generate.ts` helpers.
+- Consequences: Higher availability with the same free-tier keys; a bad model id degrades to the next model instead of failing the request. The registry is process-local (fine for serverless/Vercel); it is injectable for deterministic tests.
+
+## ADR-016: Retry backoff hardening — Retry-After + broader transient detection
+
+- Date: 2026-07-07
+- Status: Accepted
+- Context: The original retry only inspected HTTP status and used fixed jittered backoff, ignoring provider `Retry-After` hints and network-level failures.
+- Decision: `withRetry` now parses `Retry-After` (seconds or HTTP date) as a delay floor, detects retryable network codes (ECONNRESET/ETIMEDOUT/…) by walking the `cause` chain, and matches transient message fragments ("resource exhausted", "high demand", …). Sleep and randomness are injectable for fast, deterministic tests.
+- Consequences: Fewer wasted retries against hard failures, and backoff that respects server guidance; retry behavior is unit-tested without real timers.
+
+## ADR-017: Request body-size cap + startup env validation + health endpoint
+
+- Date: 2026-07-07
+- Status: Accepted
+- Context: JSON routes parsed unbounded bodies (DoS surface), env misconfiguration failed lazily and opaquely, and there was no machine-readable liveness/feature probe for smoke tests and demos.
+- Decision: `readJsonWithLimit` (`src/server/http/read-json.ts`) rejects oversized bodies via `content-length` and actual byte length (413 `payload_too_large`). `validateServerEnv` (Zod, `src/lib/config/env.ts`) validates env _shape_; `src/instrumentation.ts` runs it at Node startup, warning on a missing key and throwing only on invalid values in production. `GET /api/health` reports status, AI mode (live vs fallback), and the resolved model chains (no secrets).
+- Consequences: Bounded input, fail-fast on genuinely invalid config while still degrading gracefully when the key is absent, and a cheap smoke target used by CI.
+
+## ADR-018: Behavior + performance baselines, and hardened CI/CD for Vercel
+
+- Date: 2026-07-07
+- Status: Accepted
+- Context: Prose-level AI assertions miss orchestration regressions (tool usage, grounding shape, fallback flags), the deterministic routing engine had no perf guard, and CI ran a single OS with no supply-chain/code scanning. Deployment target is Vercel (no Firebase).
+- Decision: Add MSW-driven behavior snapshots (`tests/behavior/**`) over normalized envelopes, a CI-safe routing perf baseline (`tests/perf/**`), a cross-OS CI matrix (Ubuntu + Windows) with a `/api/health` smoke job, CodeQL (`security-and-quality`) and grouped Dependabot. Vercel readiness: `vercel.json`, Node runtime + `maxDuration` on AI routes, per-request nonce CSP via `proxy.ts` (Vercel-compatible).
+- Consequences: Intentional behavior changes require a reviewed snapshot update (`npm run test:behavior:update`); regressions in tool/grounding/fallback logic fail fast. No Firebase dependency; deploys via Vercel CLI/git.
+
 ---
