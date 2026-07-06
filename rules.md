@@ -184,14 +184,65 @@
 
 ---
 
-## 9. Git, Commits & CI
+## 9. Git, Commits, GitHub (`gh`) & CI
 
-- **Conventional Commits** (`feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `perf:`, `chore:`, `ci:`), enforced by commitlint. Small, focused, atomic commits — one logical change each.
-- **Pre-commit** (Husky + lint-staged): eslint --fix + prettier + typecheck on staged files. **commit-msg:** commitlint.
-- **CI (GitHub Actions, Node 22) pipeline, all must pass:**
-  `npm ci → typecheck → lint (zero warnings) → test + coverage (thresholds) → build → npm audit (no high/critical)`.
-- No direct-to-`main` broken pushes; each phase from `plan.md` §15 ends green with a commit.
-- `package-lock.json` committed; deterministic installs via `npm ci`.
+### 9.1 Commit conventions
+- **Conventional Commits**, enforced by commitlint: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `perf:`, `chore:`, `ci:`, `build:`, `style:`.
+- Subject ≤ 72 chars, imperative mood ("add", not "added"). Body explains **why**, wrapped ~72 cols. Reference issues in the footer (`Refs #12`).
+- **Small, atomic, one-logical-change commits.** Each phase in `plan.md` §15 ends with its own green commit. Never mix refactor + feature + formatting in one commit.
+- **Credit belongs to the git author (Priyanshu Chawda).** Do NOT add `Co-authored-by:` trailers for tools/assistants. A global `commit-msg` hook strips any auto-injected `Co-authored-by: Cursor` line — do not remove or bypass that hook.
+
+### 9.2 Pre-commit / commit-msg hooks (Husky)
+- **pre-commit** (lint-staged): `eslint --fix` + `prettier --write` + `tsc --noEmit` on staged files. Commit is blocked if any fail.
+- **commit-msg**: commitlint validates the Conventional Commit format.
+- **Never** use `--no-verify` / `-n` to skip hooks unless the user explicitly asks. If a hook fails, fix the cause and commit again — do not bypass.
+
+### 9.3 Environment gotchas (Windows / PowerShell — this repo)
+- The shell is **PowerShell**: **heredocs (`<<'EOF'`) do NOT work.** For multi-line commit messages, write the message to a temp file and use `-F`:
+  ```powershell
+  # write message to a file first (e.g. via the editor), then:
+  git commit -F .git/COMMIT_MSG.tmp
+  Remove-Item .git/COMMIT_MSG.tmp
+  ```
+  For short single-line messages, one `-m` is fine: `git commit -m "docs: update rules"`.
+- Chain dependent commands with `;` or `&&` on a **single line** (no literal newlines between commands). Quote Windows paths containing spaces.
+- Do not rely on `$(cat <<EOF...)` — it fails in PowerShell.
+
+### 9.4 Standard commit workflow (run in order; keep everything green)
+```powershell
+git status --short                      # review what changed
+# only stage intended files (never blindly commit secrets):
+git add plan.md rules.md src/...        # or: git add -A  (after confirming .env is gitignored)
+git status --short                      # confirm .env / .env.local are NOT staged
+git commit -F .git/COMMIT_MSG.tmp       # (or -m "..." for one-liners)
+git log -1 --format='%an <%ae>%n%B'     # verify author + clean message (no Cursor trailer)
+```
+- **Never commit** `.env`, `.env.local`, credentials, tokens, or `node_modules`. Verify with `git status` before every commit. `.gitignore` already excludes them — keep it that way.
+- If a secret is ever staged, unstage it (`git restore --staged <file>`) and add it to `.gitignore` before committing.
+
+### 9.5 GitHub via `gh` (repo is PRIVATE: `priyanshuchawda/stadiumiq`)
+- Confirm auth once: `gh auth status` (must be logged in with `repo` scope).
+- Create a private repo (only if it doesn't exist): 
+  ```powershell
+  gh repo create stadiumiq --private --source=. --remote=origin --push --description "..."
+  ```
+- Push normal work: 
+  ```powershell
+  git push -u origin main            # first push sets upstream
+  git push                            # subsequent pushes
+  ```
+- **Keep the repo private.** Never run `gh repo edit --visibility public`. Never force-push to `main` except to repair your own un-shared history, and only with `--force-with-lease` (never bare `--force`).
+- Use `gh` for all GitHub tasks (issues, PRs, checks, releases) — e.g. `gh pr create`, `gh run list`, `gh run watch`.
+
+### 9.6 Branching & PRs (when work is non-trivial)
+- Feature branches: `feat/<short-name>`, `fix/<short-name>`. Keep `main` always green/deployable.
+- Open PRs with `gh pr create --fill` (or a written summary + test plan). Ensure CI is green before merge: `gh pr checks`.
+- Prefer squash-merge to keep `main` history clean and atomic.
+
+### 9.7 CI (GitHub Actions, Node 22) — all stages must pass
+`npm ci → typecheck → lint (zero warnings) → test + coverage (thresholds) → build → npm audit (no high/critical)`.
+- No direct-to-`main` broken pushes; a red pipeline blocks merge.
+- `package-lock.json` committed; deterministic installs via `npm ci` (never `npm install` in CI).
 
 ---
 
