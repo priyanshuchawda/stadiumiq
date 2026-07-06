@@ -9,14 +9,18 @@ import type { UserContext } from "@/types/stadium";
 
 type ChatWindowProps = {
   initialContext?: Partial<UserContext>;
+  groundingTopic?: string | undefined;
 };
 
-export function ChatWindow({ initialContext }: ChatWindowProps): React.JSX.Element {
+export function ChatWindow({
+  initialContext,
+  groundingTopic,
+}: ChatWindowProps): React.JSX.Element {
   const [context, setContext] = useState<UserContext>(() =>
     createDefaultContext(initialContext),
   );
   const [input, setInput] = useState("");
-  const chat = useChatState(context);
+  const chat = useChatState(context, groundingTopic);
 
   function handleSubmit(): void {
     const trimmed = input.trim();

@@ -18,6 +18,7 @@ export default async function AssistantPage({
   const params = await searchParams;
   const persona = readParam(params["persona"]) as Persona | undefined;
   const language = readParam(params["lang"]);
+  const groundingTopic = readParam(params["topic"]);
 
   return (
     <main id="main-content" className="mx-auto w-full max-w-4xl flex-1 px-4 py-10">
@@ -30,6 +31,7 @@ export default async function AssistantPage({
           ...(persona ? { persona } : {}),
           ...(language ? { language } : {}),
         }}
+        groundingTopic={groundingTopic}
       />
     </main>
   );

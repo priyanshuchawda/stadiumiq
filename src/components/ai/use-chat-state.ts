@@ -5,7 +5,7 @@ import { submitChatMessage, submitVisionImage } from "@/components/ai/chat-actio
 import type { ChatMessage } from "@/components/ai/chat-api";
 import type { UserContext } from "@/types/stadium";
 
-export function useChatState(context: UserContext) {
+export function useChatState(context: UserContext, groundingTopic?: string) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [streaming, setStreaming] = useState("");
   const [loading, setLoading] = useState(false);
@@ -18,7 +18,13 @@ export function useChatState(context: UserContext) {
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
-    await submitChatMessage(text, context, controller, callbacks);
+    await submitChatMessage({
+      text,
+      context,
+      controller,
+      callbacks,
+      groundingTopic,
+    });
   }
 
   async function sendImage(file: File): Promise<void> {

@@ -27,3 +27,12 @@ export function buildSystemPrompt(context: UserContext): string {
 export function wrapUserMessage(message: string): string {
   return ["<user_data>", message, "</user_data>"].join("\n");
 }
+
+export function buildGroundedSystemPrompt(context: UserContext): string {
+  return [
+    buildSystemPrompt(context),
+    "Use Google Search grounding for live transport, traffic, transit, and real-time updates.",
+    "Cite recent public sources. Combine stadium shuttle/metro options with eco-friendly advice when asked.",
+    "Never invent live delays or schedules without search grounding.",
+  ].join("\n");
+}

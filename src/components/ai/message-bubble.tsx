@@ -1,11 +1,17 @@
+import { GroundingCitations } from "@/components/ai/grounding-citations";
+import { SearchSuggestions } from "@/components/ai/search-suggestions";
+import type { GroundedAnswer } from "@/types/grounding";
+
 type MessageBubbleProps = {
   role: "user" | "assistant";
   content: string;
+  grounding?: GroundedAnswer | undefined;
 };
 
 export function MessageBubble({
   role,
   content,
+  grounding,
 }: MessageBubbleProps): React.JSX.Element {
   const isUser = role === "user";
   return (
@@ -18,6 +24,15 @@ export function MessageBubble({
     >
       <span className="sr-only">{isUser ? "You said:" : "Kai said:"}</span>
       {content}
+      {!isUser && grounding ? (
+        <>
+          <GroundingCitations
+            sources={grounding.sources}
+            webSearchQueries={grounding.webSearchQueries}
+          />
+          <SearchSuggestions html={grounding.searchSuggestionsHtml} />
+        </>
+      ) : null}
     </div>
   );
 }

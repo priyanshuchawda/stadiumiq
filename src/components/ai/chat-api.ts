@@ -1,3 +1,4 @@
+import type { GroundedAnswer } from "@/types/grounding";
 import type { StreamEvent } from "@/lib/ai/sse";
 import type { UserContext } from "@/types/stadium";
 
@@ -5,6 +6,7 @@ export type ChatMessage = {
   id: string;
   role: "user" | "assistant";
   content: string;
+  grounding?: GroundedAnswer | undefined;
 };
 
 type StreamMeta = { fallback: boolean; usedTools: string[] };
@@ -111,4 +113,20 @@ export async function sendVisionRequest(
     throw new Error(payload.error ?? "Vision request failed");
   }
   return payload.answer ?? "";
+}
+
+export async function sendGroundedMessage(
+  message: string,
+  context: UserContext,
+): Promise<GroundedAnswer> {
+  const response = await fetch("/api/grounded", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message, context }),
+  });
+  const payload = (await response.json()) as GroundedAnswer & { error?: string };
+  if (!response.ok) {
+    throw new Error(payload.error ?? "Grounded request failed");
+  }
+  return payload;
 }

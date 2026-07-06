@@ -19,7 +19,12 @@ export function ChatMessageList({
       className="grid min-h-80 gap-3 rounded-xl border border-zinc-200 p-4 dark:border-zinc-800"
     >
       {messages.map((message) => (
-        <MessageBubble key={message.id} role={message.role} content={message.content} />
+        <MessageBubble
+          key={message.id}
+          role={message.role}
+          content={message.content}
+          grounding={message.grounding}
+        />
       ))}
       {streaming ? <MessageBubble role="assistant" content={streaming} /> : null}
       {messages.length === 0 && !streaming ? (

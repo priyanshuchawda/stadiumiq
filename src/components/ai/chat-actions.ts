@@ -1,4 +1,9 @@
-import { sendChatMessage, sendVisionRequest } from "@/components/ai/chat-api";
+import {
+  sendChatMessage,
+  sendGroundedMessage,
+  sendVisionRequest,
+} from "@/components/ai/chat-api";
+import { detectGroundingIntent } from "@/lib/grounding/detect-intent";
 import type { ChatMessage } from "@/components/ai/chat-api";
 import type { UserContext } from "@/types/stadium";
 
@@ -9,12 +14,21 @@ type ChatCallbacks = {
   setLoading: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
-export async function submitChatMessage(
-  text: string,
-  context: UserContext,
-  controller: AbortController,
-  callbacks: ChatCallbacks,
-): Promise<void> {
+type SubmitChatInput = {
+  text: string;
+  context: UserContext;
+  controller: AbortController;
+  callbacks: ChatCallbacks;
+  groundingTopic?: string | undefined;
+};
+
+export async function submitChatMessage(input: SubmitChatInput): Promise<void> {
+  if (detectGroundingIntent(input.text, input.groundingTopic)) {
+    await submitGroundedChatMessage(input.text, input.context, input.callbacks);
+    return;
+  }
+
+  const { text, context, controller, callbacks } = input;
   callbacks.setError(null);
   callbacks.setLoading(true);
   callbacks.setStreaming("");
@@ -48,6 +62,45 @@ export async function submitChatMessage(
         submitError instanceof Error ? submitError.message : "Request failed",
       );
     }
+  } finally {
+    callbacks.setLoading(false);
+  }
+}
+
+async function submitGroundedChatMessage(
+  text: string,
+  context: UserContext,
+  callbacks: ChatCallbacks,
+): Promise<void> {
+  callbacks.setError(null);
+  callbacks.setLoading(true);
+  callbacks.setMessages((prev) => [
+    ...prev,
+    { id: crypto.randomUUID(), role: "user", content: text },
+  ]);
+
+  try {
+    const grounded = await sendGroundedMessage(text, context);
+    callbacks.setMessages((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        role: "assistant",
+        content: grounded.answer,
+        grounding: grounded,
+      },
+    ]);
+    if (grounded.fallback) {
+      callbacks.setError(
+        "Live search unavailable — showing seeded transport guidance.",
+      );
+    }
+  } catch (groundedError) {
+    callbacks.setError(
+      groundedError instanceof Error
+        ? groundedError.message
+        : "Grounded request failed",
+    );
   } finally {
     callbacks.setLoading(false);
   }
