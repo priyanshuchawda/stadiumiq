@@ -120,7 +120,7 @@ flowchart TB
 
 ### 4. Data & “live” feel
 
-Crowd density **simulates** time-varying offsets from deterministic seeds — enough to demo heatmaps, gate logic, and dashboards without paid feeds. Repositories are interface-backed for future DB/API swap ([`DECISIONS.md`](./DECISIONS.md) ADR-008).
+Crowd density **simulates** time-varying offsets from deterministic seeds — enough to demo heatmaps, gate logic, and dashboards without paid feeds. Repositories are interface-backed for future DB/API swap.
 
 ---
 
@@ -237,8 +237,6 @@ src/
 └── types/               # Domain & API types
 ```
 
-Full build plan: [`plan.md`](./plan.md) · Enforced standards: [`rules.md`](./rules.md)
-
 ---
 
 ## Tech stack
@@ -289,4 +287,4 @@ Notes:
 Private submission project — FIFA World Cup 2026 hackathon scope.  
 Operational map data and venue layout are **fictional/demo seeds**, not official FIFA or venue data.
 
-For security details see [`SECURITY.md`](./SECURITY.md). For architecture decisions see [`DECISIONS.md`](./DECISIONS.md).
+For security details see [`SECURITY.md`](./SECURITY.md). For test layout see [`tests/README.md`](./tests/README.md). For operations see [`docs/operations-runbook.md`](./docs/operations-runbook.md).

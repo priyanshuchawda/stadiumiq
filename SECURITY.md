@@ -1,6 +1,6 @@
 # SECURITY.md — StadiumIQ Threat Model & Controls
 
-> This document is part of the graded submission (Security is a **High Impact** area). It describes what we protect, the threats we considered, and the concrete controls implemented. It complements the mandatory rules in [`rules.md`](./rules.md) §5 and [`plan.md`](./plan.md) §10.
+> This document describes what we protect, the threats we considered, and the concrete controls implemented.
 
 ## 1. Scope & Assets
 
