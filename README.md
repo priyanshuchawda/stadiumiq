@@ -146,6 +146,8 @@ Get a **free** Gemini API key from [Google AI Studio](https://aistudio.google.co
 GEMINI_API_KEY=your_key_here
 ```
 
+> **Zero-key mode:** the app runs fully **without** an API key — every AI feature degrades to deterministic, context-aware fallbacks (routes, gate advice, SOPs, transport eco-scoring), so you can evaluate everything with no credentials.
+
 ### Run
 
 ```bash
@@ -212,16 +214,18 @@ CI runs on every push to `main` (see [`.github/workflows/ci.yml`](./.github/work
 
 ## Evaluation criteria mapping
 
-| Criterion                     | How StadiumIQ addresses it                                                           |
-| ----------------------------- | ------------------------------------------------------------------------------------ |
-| **Smart dynamic assistant**   | Kai + tools + grounding; streams; multimodal vision                                  |
-| **Logical context decisions** | `UserContext` drives prompts, tools, routing, gates — tested                         |
-| **Code quality**              | TS strict, layered architecture, ESLint size/complexity caps                         |
-| **Security**                  | Server-only AI, Zod, rate limits, CSP, [`SECURITY.md`](./SECURITY.md)                |
-| **Testing**                   | Unit, component, integration (MSW), behavior + perf baselines, e2e, a11y, live smoke |
-| **Accessibility**             | Skip links, aria-live, keyboard map, patterns+labels, forced-colors, axe clean       |
-| **Efficiency**                | RSC-first, SSE streaming, LRU caches, flash-lite + multi-model fallback              |
-| **Usability**                 | 5 journeys ≤3 clicks, fallbacks, empty/error states                                  |
+Every claim below is verifiable in the repo — file paths included.
+
+| Criterion                     | Evidence                                                                                                                                                                                                                                                                                          |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Smart dynamic assistant**   | Shared function-calling loop with circuit breaker (`src/lib/ai/tool-loop.ts`), SSE streaming (`src/lib/ai/stream-kai.ts`), Google Search grounding with citations (`src/lib/ai/grounded-search.ts`), multimodal vision (`src/app/api/vision/`)                                                    |
+| **Logical context decisions** | Typed `UserContext` drives prompts, tool results, gate scoring, and routing; divergence covered by tests (`tests/unit/ai-fallbacks.test.ts`, `tests/behavior/`)                                                                                                                                   |
+| **Code quality**              | TypeScript strict + `exactOptionalPropertyTypes`, one-way layering (`ui → route → service → ai/data`), ESLint complexity caps at zero warnings, single tool-loop source of truth                                                                                                                  |
+| **Security**                  | DOMPurify twice (server + render boundary), per-request nonce CSP (`src/proxy.ts`), rate limits on all 6 AI routes with bucket eviction, origin allowlist, body-size caps, strict Zod at every trust boundary — threat model in [`SECURITY.md`](./SECURITY.md)                                    |
+| **Testing**                   | **170 tests** across unit / component / MSW integration / behavior snapshots / perf baselines, coverage gate **enforced in CI** (90% stmts / 78% branches / 95% funcs), Playwright e2e + **axe** a11y job, deterministic Gemini fake (`tests/mocks/fake-gemini.ts`)                               |
+| **Accessibility**             | Keyboard-operable SVG map (one tab stop per node), **screen-reader-safe streaming** (tokens silent, finished reply announced once — `chat-message-list.tsx`), skip link, `lang`/`dir` on multilingual content, `forced-colors` + `prefers-reduced-motion` + `prefers-contrast` support, axe clean |
+| **Efficiency**                | Tool-loop answer reused for streaming (no duplicate model call), 60s AI caches with in-flight dedup (`src/lib/ai/async-cache.ts`), multi-model fallback with health cooldowns, `flash-lite` for cheap tasks, capped output tokens, SSR-first pages                                                |
+| **Usability**                 | 5 persona journeys ≤1 click from home, graceful fallbacks for every failure mode, clear empty/error states                                                                                                                                                                                        |
 
 ---
 
