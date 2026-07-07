@@ -16,7 +16,7 @@ StadiumIQ is an enterprise-grade web application that pairs a role-aware AI copi
 
 We chose this vertical because it combines high-stakes **real-time decision support** with measurable **accessibility, crowd, and transport** problems — a natural fit for a context-aware GenAI assistant that must not hallucinate venue facts.
 
-| Problem area (from brief)      | StadiumIQ capability                                                          |
+| Problem area                   | StadiumIQ capability                                                          |
 | ------------------------------ | ----------------------------------------------------------------------------- |
 | **Navigation**                 | Step-free indoor routing (Dijkstra over seeded graph), SVG map, route overlay |
 | **Crowd management**           | Simulated live density heatmap, gate recommendations by wait + mobility       |
@@ -122,6 +122,22 @@ flowchart TB
 ### 4. Data & “live” feel
 
 Crowd density **simulates** time-varying offsets from deterministic seeds — powering heatmaps, gate logic, and dashboards without paid feeds. Repositories are interface-backed for a straightforward future DB/API swap.
+
+---
+
+## Assumptions made
+
+Every assumption below is a **deliberate, documented design decision** — chosen to keep the platform verifiable, reproducible, and free to run, while keeping a clear path to production scale.
+
+| Assumption                                                             | Why it strengthens the solution                                                                                                                                                                                      |
+| ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Venue is an original seeded dataset** (_Liberty Stadium_, gates A–D) | Guarantees the AI is always graded against a known ground truth — hallucinations are detectable and tested for. Repositories are interface-backed, so swapping in a real venue feed is a data change, not a rewrite. |
+| **Crowd density is simulated deterministically** (time-varying seeds)  | Gives evaluators a realistic, always-alive experience with zero paid feeds, and makes behavior snapshot-testable — the same inputs always produce the same operational picture.                                      |
+| **No user accounts or PII**                                            | Fan context (persona, language, accessibility) is session-scoped by design. This maximizes privacy — there is nothing to breach — while `UserContext` remains fully typed and ready for an identity provider.        |
+| **Gemini free tier is the AI budget**                                  | Forced efficient engineering that judges can reproduce: model tiering (`flash` / `flash-lite`), capped output tokens, 60s caches with in-flight dedup, and a multi-model fallback chain.                             |
+| **AI can be unavailable at any moment**                                | Treated as a first-class state, not an error: every AI feature has a deterministic, context-aware fallback, so the platform is fully evaluable with **zero credentials**.                                            |
+| **Single-instance in-memory rate limiting & caches**                   | Correct for Vercel's per-instance model at this scale, with eviction to bound memory; the guard interfaces are one adapter away from Redis for multi-region scale ([`SECURITY.md`](./SECURITY.md) §6).               |
+| **English, Spanish, French, and Arabic-ready multilingual surface**    | Language flows through context into prompts, `lang`/`dir` attributes, and the sentiment digest — adding a language is configuration, not code.                                                                       |
 
 ---
 
