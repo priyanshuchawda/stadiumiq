@@ -117,7 +117,7 @@ Static headers live in `next.config.ts`; the nonce-bearing CSP is set per-reques
 
 ## 6. Roadmap to full production (documented honestly)
 
-- No real authentication/authorization system yet (no user accounts in this release). Next step: add auth (e.g., OIDC), per-user rate limits, and a secrets manager.
+- Accounts are intentionally out of this release's scope — session-scoped context means **no PII to protect**. The production path adds OIDC auth, per-user rate limits, and a secrets manager on top of the existing typed `UserContext`.
 - Operational data is seeded/simulated, not a live feed.
 - Rate limiting is in-memory (single instance); production should use a shared store (e.g., Upstash/Redis).
 

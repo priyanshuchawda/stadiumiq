@@ -42,7 +42,7 @@ We chose this vertical because it combines high-stakes **real-time decision supp
 | **Operational intelligence**   | Organizer dashboard: KPIs, incidents, AI summaries, staffing suggestions      |
 | **Real-time decision support** | Staff/volunteer copilot with tools + SOPs + crowd status                      |
 
-**Flagship venue:** _Liberty Stadium_ (fictional MetLife-style venue) with gates A–D, concourses, sections, amenities, and time-varying simulated crowd data.
+**Flagship venue:** _Liberty Stadium_ — an original venue dataset modeled at MetLife scale, with gates A–D, concourses, sections, amenities, and time-varying simulated crowd data.
 
 ---
 
