@@ -47,6 +47,34 @@ describe("AI fallbacks without a Gemini key", () => {
     expect(wheelchair.answer.toLowerCase()).toContain("step-free");
   });
 
+  it("askKai answers in the user's language when offline", async () => {
+    const spanish = await askKai({
+      context: { ...fan, language: "es" },
+      message: "¿qué puerta?",
+    });
+    expect(spanish.answer).toContain("Puerta C");
+
+    const arabic = await askKai({
+      context: { ...wheelchairFan, language: "ar" },
+      message: "أي بوابة؟",
+    });
+    expect(arabic.answer).toContain("البوابة C");
+  });
+
+  it("askKai maps region-tagged and unsupported languages sensibly", async () => {
+    const quebecFrench = await askKai({
+      context: { ...fan, language: "fr-CA" },
+      message: "quelle porte?",
+    });
+    expect(quebecFrench.answer).toContain("Porte C");
+
+    const unsupported = await askKai({
+      context: { ...fan, language: "de" },
+      message: "welches tor?",
+    });
+    expect(unsupported.answer).toContain("Gate C");
+  });
+
   it("grounded fallback picks a destination-aware option (airport)", async () => {
     const result = await askGroundedKai({
       context: fan,

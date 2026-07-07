@@ -145,15 +145,15 @@ Crowd density **simulates** time-varying offsets from deterministic seeds — po
 
 Every assumption below is a **deliberate, documented design decision** — chosen to keep the platform verifiable, reproducible, and free to run, while keeping a clear path to production scale.
 
-| Assumption                                                             | Why it strengthens the solution                                                                                                                                                                                      |
-| ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Venue is an original seeded dataset** (_Liberty Stadium_, gates A–D) | Guarantees the AI is always graded against a known ground truth — hallucinations are detectable and tested for. Repositories are interface-backed, so swapping in a real venue feed is a data change, not a rewrite. |
-| **Crowd density is simulated deterministically** (time-varying seeds)  | Gives evaluators a realistic, always-alive experience with zero paid feeds, and makes behavior snapshot-testable — the same inputs always produce the same operational picture.                                      |
-| **No user accounts or PII**                                            | Fan context (persona, language, accessibility) is session-scoped by design. This maximizes privacy — there is nothing to breach — while `UserContext` remains fully typed and ready for an identity provider.        |
-| **Gemini free tier is the AI budget**                                  | Forced efficient engineering that judges can reproduce: model tiering (`flash` / `flash-lite`), capped output tokens, 60s caches with in-flight dedup, and a multi-model fallback chain.                             |
-| **AI can be unavailable at any moment**                                | Treated as a first-class state, not an error: every AI feature has a deterministic, context-aware fallback, so the platform is fully evaluable with **zero credentials**.                                            |
-| **Single-instance in-memory rate limiting & caches**                   | Correct for Vercel's per-instance model at this scale, with eviction to bound memory; the guard interfaces are one adapter away from Redis for multi-region scale ([`SECURITY.md`](./SECURITY.md) §6).               |
-| **English, Spanish, French, and Arabic-ready multilingual surface**    | Language flows through context into prompts, `lang`/`dir` attributes, and the sentiment digest — adding a language is configuration, not code.                                                                       |
+| Assumption                                                             | Why it strengthens the solution                                                                                                                                                                                         |
+| ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Venue is an original seeded dataset** (_Liberty Stadium_, gates A–D) | Guarantees the AI is always graded against a known ground truth — hallucinations are detectable and tested for. Repositories are interface-backed, so swapping in a real venue feed is a data change, not a rewrite.    |
+| **Crowd density is simulated deterministically** (time-varying seeds)  | Gives evaluators a realistic, always-alive experience with zero paid feeds, and makes behavior snapshot-testable — the same inputs always produce the same operational picture.                                         |
+| **No user accounts or PII**                                            | Fan context (persona, language, accessibility) is session-scoped by design. This maximizes privacy — there is nothing to breach — while `UserContext` remains fully typed and ready for an identity provider.           |
+| **Gemini free tier is the AI budget**                                  | Forced efficient engineering that judges can reproduce: model tiering (`flash` / `flash-lite`), capped output tokens, 60s caches with in-flight dedup, and a multi-model fallback chain.                                |
+| **AI can be unavailable at any moment**                                | Treated as a first-class state, not an error: every AI feature has a deterministic, context-aware fallback, so the platform is fully evaluable with **zero credentials**.                                               |
+| **Single-instance in-memory rate limiting & caches**                   | Correct for Vercel's per-instance model at this scale, with eviction to bound memory; the guard interfaces are one adapter away from Redis for multi-region scale ([`SECURITY.md`](./SECURITY.md) §6).                  |
+| **English, Spanish, French, and Arabic-ready multilingual surface**    | Language flows through context into prompts, `lang`/`dir` attributes, the sentiment digest, **and the zero-key fallback answers themselves** (`src/lib/ai/fallback.ts`) — adding a language is configuration, not code. |
 
 ---
 
@@ -178,7 +178,7 @@ Get a **free** Gemini API key from [Google AI Studio](https://aistudio.google.co
 GEMINI_API_KEY=your_key_here
 ```
 
-> **Zero-key mode:** the app runs fully **without** an API key — every AI feature degrades to deterministic, context-aware fallbacks (routes, gate advice, SOPs, transport eco-scoring), so you can evaluate everything with no credentials.
+> **Zero-key mode:** the app runs fully **without** an API key — every AI feature degrades to deterministic, context-aware fallbacks (routes, gate advice, SOPs, transport eco-scoring), and the assistant fallback answers **in the user's language** (English, Spanish, French, Arabic), so you can evaluate everything with no credentials.
 
 ### Run
 
@@ -235,7 +235,9 @@ Live Gemini smoke test (optional, uses your key):
 $env:GEMINI_LIVE_TEST="true"; npm run test:live
 ```
 
-CI runs on every push to `main` (see [`.github/workflows/ci.yml`](./.github/workflows/ci.yml)): a cross-OS matrix (Ubuntu + Windows) for typecheck/lint/test/coverage/build, a Playwright e2e + a11y job, and a `/api/health` smoke job. Static analysis via **CodeQL** and dependency updates via **Dependabot** run alongside it.
+CI runs on every push to `main` (see [`.github/workflows/ci.yml`](./.github/workflows/ci.yml)): a cross-OS matrix (Ubuntu + Windows) for typecheck/lint/test/coverage/build, a Playwright e2e + a11y job, a **Lighthouse** job asserting accessibility/best-practices/SEO scores, and a `/api/health` smoke job. Static analysis via **CodeQL** and dependency updates via **Dependabot** run alongside it.
+
+Coverage is measured where correctness lives — services, HTTP guards, security, and AI orchestration — and enforced at **96% statements / 86% branches / 98% functions**. The browser layer is verified by the layers unit coverage cannot see: component tests, 21 end-to-end journeys, axe scans, and Lighthouse gates, all running against the real production build in CI.
 
 ### Resilience & liveness
 
