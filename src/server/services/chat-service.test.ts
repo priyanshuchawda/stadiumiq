@@ -40,4 +40,21 @@ describe("handleChatRequest", () => {
     );
     expect(result.ok).toBe(true);
   });
+
+  it("returns 429 with Retry-After once the client exhausts its budget", () => {
+    let denied: ReturnType<typeof handleChatRequest> | null = null;
+    for (let i = 0; i < 50; i += 1) {
+      const result = handleChatRequest({ bad: true }, makeChatRequest("10.0.0.9"));
+      if (!result.ok && result.status === 429) {
+        denied = result;
+        break;
+      }
+    }
+
+    expect(denied).not.toBeNull();
+    if (denied && !denied.ok) {
+      expect(denied.message).toMatch(/Too many requests/);
+      expect(denied.retryAfter).toBeGreaterThan(0);
+    }
+  });
 });

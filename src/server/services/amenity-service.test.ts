@@ -22,4 +22,16 @@ describe("getAmenities", () => {
     });
     expect(amenities.every((item) => item.accessible)).toBe(true);
   });
+
+  it("appends sensory rooms for sensory-sensitive users", () => {
+    const amenities = getAmenities({
+      type: "food",
+      context: {
+        persona: "fan",
+        language: "en",
+        accessibility: { mobility: "none", lowVision: false, sensorySensitive: true },
+      },
+    });
+    expect(amenities.some((item) => item.type === "sensory_room")).toBe(true);
+  });
 });

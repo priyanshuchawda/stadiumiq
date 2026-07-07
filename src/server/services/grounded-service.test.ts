@@ -49,4 +49,24 @@ describe("handleGroundedRequest", () => {
     );
     expect(result.ok).toBe(false);
   });
+
+  it("returns 429 with Retry-After once the client exhausts its budget", async () => {
+    let denied: Awaited<ReturnType<typeof handleGroundedRequest>> | null = null;
+    for (let i = 0; i < 50; i += 1) {
+      const result = await handleGroundedRequest(
+        { bad: true },
+        makeApiRequest("/api/grounded", "10.0.0.8"),
+      );
+      if (!result.ok && result.status === 429) {
+        denied = result;
+        break;
+      }
+    }
+
+    expect(denied).not.toBeNull();
+    if (denied && !denied.ok) {
+      expect(denied.message).toMatch(/Too many requests/);
+      expect(denied.retryAfter).toBeGreaterThan(0);
+    }
+  });
 });
