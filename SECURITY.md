@@ -90,7 +90,8 @@ Everything crossing from untrusted → trusted is **validated with Zod** and tre
 ### 3.9 Supply chain
 
 - **Threat:** Vulnerable/malicious dependencies.
-- **Controls:** `npm ci` (locked), `npm audit` in CI (fails on high/critical), pinned versions, no EOL/deprecated deps, minimal dependency surface. **CodeQL** (`security-and-quality`) static analysis and grouped **Dependabot** updates run in CI (`.github/`). Runtime env is shape-validated at startup (`validateServerEnv`), failing fast on invalid config in production.
+- **Controls:** `npm ci` (locked), `npm audit` in CI (fails on high/critical), pinned versions, no EOL/deprecated deps, minimal dependency surface. **CodeQL** (`security-and-quality`) static analysis and grouped **Dependabot** updates run in CI (`.github/`). GitHub Actions are **pinned to full commit SHAs**. Runtime env is shape-validated at startup (`validateServerEnv`), failing fast on invalid config in production.
+- **Known advisories (tracked):** `npm audit` currently reports 2 **moderate** findings for a `postcss` version bundled _inside_ Next.js itself ([GHSA-qx2v-qp2m-jg93](https://github.com/advisories/GHSA-qx2v-qp2m-jg93)). We are on the latest stable Next.js release, so no upstream fix exists yet; the advisory concerns PostCSS stringification of attacker-controlled CSS, which this app never performs (no user-supplied CSS is processed). CI gates on high/critical, and Dependabot will pick up the patched Next.js release automatically.
 
 ### 3.10 Sensitive data in transit/logs
 
