@@ -1,5 +1,12 @@
 # StadiumIQ
 
+[![CI](https://github.com/priyanshuchawda/stadiumiq/actions/workflows/ci.yml/badge.svg)](https://github.com/priyanshuchawda/stadiumiq/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/priyanshuchawda/stadiumiq/actions/workflows/codeql.yml/badge.svg)](https://github.com/priyanshuchawda/stadiumiq/actions/workflows/codeql.yml)
+[![Lighthouse](https://github.com/priyanshuchawda/stadiumiq/actions/workflows/lighthouse.yml/badge.svg)](https://github.com/priyanshuchawda/stadiumiq/actions/workflows/lighthouse.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)
+[![TypeScript strict](https://img.shields.io/badge/TypeScript-strict-blue.svg)](./tsconfig.json)
+[![Coverage ≥90%](https://img.shields.io/badge/coverage-%E2%89%A590%25%20enforced-brightgreen.svg)](./vitest.config.ts)
+
 **GenAI stadium operations & fan experience platform for FIFA World Cup 2026**
 
 StadiumIQ is an enterprise-grade web application that pairs a role-aware AI copilot (**Kai**) with live operational dashboards. It helps **fans, volunteers, venue staff, and organizers** navigate venues, manage crowds, plan accessible routes, find transport, and make real-time operational decisions — using **Google Gemini** (tools, streaming, grounding, multimodal) on a **free-tier, production-shaped** Next.js stack.
@@ -7,6 +14,15 @@ StadiumIQ is an enterprise-grade web application that pairs a role-aware AI copi
 **Author:** Priyanshu Chawda  
 **Live app:** [stadiumiq-mauve.vercel.app](https://stadiumiq-mauve.vercel.app/)  
 **Repository:** [github.com/priyanshuchawda/stadiumiq](https://github.com/priyanshuchawda/stadiumiq)
+
+---
+
+## Screenshots
+
+|                                                                           |                                                                       |
+| ------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| **Home — persona journeys** ![Home](docs/screenshots/home.png)            | **Kai Assistant** ![Assistant](docs/screenshots/assistant.png)        |
+| **Stadium Map — live heatmap + routing** ![Map](docs/screenshots/map.png) | **Operations Dashboard** ![Dashboard](docs/screenshots/dashboard.png) |
 
 ---
 
@@ -305,7 +321,8 @@ Notes:
 
 ## License & attribution
 
+Released under the [MIT License](./LICENSE).  
 Built for FIFA World Cup 2026 stadium operations.  
 Operational map data and venue layout are **original seeded datasets** created for this project, not official FIFA or venue data.
 
-For security details see [`SECURITY.md`](./SECURITY.md). For test layout see [`tests/README.md`](./tests/README.md). For operations see [`docs/operations-runbook.md`](./docs/operations-runbook.md).
+For architecture and request lifecycles see [`docs/architecture.md`](./docs/architecture.md). For security details see [`SECURITY.md`](./SECURITY.md). For test layout see [`tests/README.md`](./tests/README.md). For operations see [`docs/operations-runbook.md`](./docs/operations-runbook.md).

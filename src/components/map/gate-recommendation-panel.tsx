@@ -30,8 +30,12 @@ export function GateRecommendationPanel({
             Alternatives: {crowd.gate.alternatives.join(", ")}
           </p>
         ) : null}
-        <p className="text-xs text-zinc-500">
-          Updated {new Date(crowd.updatedAt).toLocaleTimeString()}
+        {/* suppressHydrationWarning: locale time legitimately differs between server render and client. */}
+        <p suppressHydrationWarning className="text-xs text-zinc-500">
+          Updated{" "}
+          <time dateTime={crowd.updatedAt}>
+            {new Date(crowd.updatedAt).toLocaleTimeString()}
+          </time>
         </p>
       </div>
     </section>

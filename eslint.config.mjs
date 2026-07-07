@@ -22,6 +22,22 @@ const eslintConfig = defineConfig([
     },
   },
   {
+    // Type-aware rules on application code: catch unawaited promises and
+    // promise misuse that plain syntax linting cannot see.
+    files: ["src/**/*.ts", "src/**/*.tsx"],
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    rules: {
+      "@typescript-eslint/no-floating-promises": "error",
+      "@typescript-eslint/await-thenable": "error",
+      "@typescript-eslint/no-misused-promises": "error",
+    },
+  },
+  {
     // Test files legitimately contain long describe/it suites and fixtures.
     files: ["tests/**", "**/*.test.ts", "**/*.test.tsx"],
     rules: {

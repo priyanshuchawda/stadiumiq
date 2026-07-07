@@ -19,8 +19,12 @@ export function DashboardExperience({
 
   return (
     <div className="grid gap-6" aria-busy={loading}>
-      <p className="text-xs text-zinc-500">
-        Updated {new Date(snapshot.updatedAt).toLocaleTimeString()}
+      {/* suppressHydrationWarning: locale time legitimately differs between server render and client. */}
+      <p suppressHydrationWarning className="text-xs text-zinc-500">
+        Updated{" "}
+        <time dateTime={snapshot.updatedAt}>
+          {new Date(snapshot.updatedAt).toLocaleTimeString()}
+        </time>
       </p>
       <KpiGrid kpis={snapshot.kpis} />
       <div className="grid gap-6 lg:grid-cols-2">
